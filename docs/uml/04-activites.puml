@@ -1,0 +1,80 @@
+' VoyaGo - Diagrammes d'activités · v1.0 · Groupe 15 · 2026-11-04
+
+@startuml act-1-reservation
+title A1 - Processus de réservation de bout en bout
+start
+:Rechercher un voyage (départ, arrivée, date, mode);
+if (Voyages disponibles ?) then (non)
+  :Changer de date / de filtres;
+  stop
+else (oui)
+endif
+:Choisir un voyage;
+if (Client connecté ?) then (non)
+  :Se connecter / créer un compte;
+endif
+:Sélectionner 1 à 6 sièges sur le plan;
+:Saisir nom, prénom et pièce d'identité de chaque passager;
+if (Sièges encore libres ?) then (non)
+  :Message « siège déjà pris »;
+  stop
+else (oui)
+endif
+:Réservation EN ATTENTE, sièges verrouillés 15 min;
+repeat
+  :Choisir MTN MoMo ou Orange Money, saisir le numéro;
+  if (Numéro valide pour l'opérateur ?) then (non)
+    :Paiement échoué, message d'erreur;
+  else (oui)
+    :Valider sur le téléphone (code secret);
+  endif
+repeat while (Paiement confirmé ?) is (non, délai non dépassé)
+-> oui;
+if (Délai de 15 min dépassé ?) then (oui)
+  :Réservation EXPIRÉE, sièges libérés;
+  :E-mail « réservation expirée »;
+  stop
+else (non)
+endif
+:Réservation CONFIRMÉE;
+fork
+  :Émettre un billet signé par passager;
+fork again
+  :Envoyer l'e-mail avec le PDF (+ SMS);
+end fork
+:Afficher les billets et QR codes;
+stop
+@enduml
+
+@startuml act-2-annulation
+title A2 - Processus d'annulation
+start
+:Ouvrir la réservation;
+if (Voyage déjà parti ?) then (oui)
+  :Annulation impossible;
+  stop
+endif
+if (Un billet déjà utilisé ?) then (oui)
+  :Annulation impossible;
+  stop
+endif
+if (Réservation payée ?) then (non)
+  :Remboursement = 0;
+else (oui)
+  if (Départ dans plus de 24 h ?) then (oui)
+    :Remboursement = 80 %;
+  elseif (Départ dans 2 h à 24 h ?) then (oui)
+    :Remboursement = 50 %;
+  else (moins de 2 h)
+    :Remboursement = 0 %;
+  endif
+endif
+:Confirmer l'annulation;
+:Réservation ANNULÉE, billets annulés, sièges libérés;
+:Tracer dans le journal d'audit;
+if (Remboursement > 0 ?) then (oui)
+  :Rembourser via l'opérateur Mobile Money;
+endif
+:E-mail de confirmation d'annulation;
+stop
+@enduml

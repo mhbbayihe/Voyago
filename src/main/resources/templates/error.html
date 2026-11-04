@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${title != null ? title : 'Erreur'})}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main class="container">
+  <div class="card empty" style="max-width:560px;margin:40px auto">
+    <div class="big"><svg th:replace="~{fragments/layout :: icon('triangle-alert')}"></svg></div>
+    <h1 th:text="${title != null ? title : (status == 404 ? 'Page introuvable' : (status == 403 ? 'Accès refusé' : 'Une erreur est survenue'))}">Erreur</h1>
+    <p th:text="${message != null and !#strings.isEmpty(message) ? message : 'Nous n''avons pas pu traiter votre demande.'}">Message</p>
+    <div class="row" style="justify-content:center">
+      <a class="btn btn-outline" href="javascript:history.back()">Retour</a>
+      <a class="btn btn-primary" th:href="@{/}">Accueil</a>
+    </div>
+  </div>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

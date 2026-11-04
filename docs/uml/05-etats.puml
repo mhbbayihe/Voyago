@@ -1,0 +1,28 @@
+' VoyaGo - Diagrammes d'états-transitions · v1.0 · Groupe 15 · 2026-11-04
+
+@startuml etat-reservation
+title E1 - Cycle de vie d'une réservation (pattern State : BookingStatus)
+[*] --> PENDING_PAYMENT : create()\n/ sièges verrouillés, expiresAt = now + 15 min
+PENDING_PAYMENT --> CONFIRMED : PaymentConfirmed\n/ billets émis, e-mail
+PENDING_PAYMENT --> EXPIRED : [now > expiresAt] tâche planifiée\n/ sièges libérés
+PENDING_PAYMENT --> CANCELLED : cancel() par le client\n/ sièges libérés
+CONFIRMED --> CANCELLED : cancel() [voyage non parti, aucun billet utilisé]\n/ remboursement selon RG5
+EXPIRED --> [*]
+CANCELLED --> [*]
+CONFIRMED --> [*] : voyage effectué
+@enduml
+
+@startuml etat-paiement
+title E2 - Cycle de vie d'un paiement
+[*] --> PENDING : initiate() [opérateur accepte la demande]
+[*] --> FAILED : initiate() [numéro refusé par l'opérateur]
+PENDING --> SUCCEEDED : webhook SUCCESSFUL\n/ PaymentConfirmed
+PENDING --> FAILED : webhook FAILED / refus du client
+PENDING --> CANCELLED : réservation expirée\nou nouvelle tentative
+SUCCEEDED --> PARTIALLY_REFUNDED : annulation (50 % / 80 %)
+SUCCEEDED --> REFUNDED : remboursement intégral\n(paiement tardif)
+PARTIALLY_REFUNDED --> REFUNDED : complément de remboursement
+FAILED --> [*]
+CANCELLED --> [*]
+REFUNDED --> [*]
+@enduml

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Mes réservations')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main class="container">
+  <div th:replace="~{fragments/layout :: flash}"></div>
+  <div class="page-head">
+    <div><h1>Mes réservations</h1><p class="muted">Vos billets à venir et votre historique.</p></div>
+    <a class="btn btn-primary" th:href="@{/}">Nouvelle réservation</a>
+  </div>
+
+  <div class="tabs" role="tablist" aria-label="Réservations">
+    <button role="tab" id="tab-up" aria-controls="panel-up" aria-selected="true" th:text="${'À venir (' + #lists.size(upcoming) + ')'}">À venir</button>
+    <button role="tab" id="tab-hist" aria-controls="panel-hist" aria-selected="false" th:text="${'Historique (' + #lists.size(history) + ')'}">Historique</button>
+  </div>
+
+  <th:block th:each="panel : ${ {'up', 'hist'} }">
+    <section role="tabpanel" th:id="${'panel-' + panel}" th:attr="aria-labelledby=${'tab-' + panel}" th:hidden="${panel == 'hist'}"
+             th:with="list=${panel == 'up' ? upcoming : history}">
+      <div class="card empty" th:if="${#lists.isEmpty(list)}">
+        <div class="big"><svg th:replace="~{fragments/layout :: icon('ticket')}"></svg></div>
+        <p th:text="${panel == 'up'} ? 'Aucun voyage à venir.' : 'Aucune réservation passée.'">vide</p>
+      </div>
+      <a class="booking-item" th:each="b : ${list}" th:href="@{/bookings/{id}(id=${b.id})}" style="color:inherit;text-decoration:none">
+        <div class="date-box">
+          <div class="d" th:text="${#temporals.format(b.departureAt, 'd')}">12</div>
+          <div class="m" th:text="${#temporals.format(b.departureAt, 'MMM')}">nov</div>
+        </div>
+        <div>
+          <strong><svg th:replace="~{fragments/layout :: icon(${b.mode.icon})}"></svg> <th:block th:text="${b.tripLabel}">trajet</th:block></strong>
+          <div class="small muted">
+            <span th:text="${#temporals.format(b.departureAt, 'EEEE HH:mm')}">heure</span> ·
+            <span th:text="${b.companyName}">compagnie</span> ·
+            <span th:text="${'Siège(s) ' + b.seatsLabel}">sièges</span> ·
+            <span class="mono" th:text="${b.reference}">ref</span>
+          </div>
+        </div>
+        <div class="row">
+          <strong th:text="${@fmt.money(b.totalAmount)}">montant</strong>
+          <span class="badge" th:classappend="${b.status.tone}" th:text="${b.status.label}">statut</span>
+        </div>
+      </a>
+    </section>
+  </th:block>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

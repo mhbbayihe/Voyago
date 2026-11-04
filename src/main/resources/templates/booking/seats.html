@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${counter} ? 'Vente au guichet' : 'Choix des sièges')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main class="container has-mobile-bar">
+  <th:block th:unless="${counter}"><div th:replace="~{fragments/layout :: steps(2)}"></div></th:block>
+  <div th:replace="~{fragments/layout :: flash}"></div>
+
+  <div class="page-head">
+    <div>
+      <h1 th:text="${counter} ? 'Vente au guichet' : 'Choisissez vos sièges'">Choisissez vos sièges</h1>
+      <p class="muted">
+        <svg th:replace="~{fragments/layout :: icon(${trip.mode().icon})}"></svg> <span th:text="${trip.label()}">trajet</span> ·
+        <span th:text="${#temporals.format(trip.departureAt(), 'EEEE d MMMM à HH:mm')}">date</span> ·
+        <span th:text="${trip.companyName()}">compagnie</span>
+      </p>
+    </div>
+    <span class="badge info" th:text="${'Jusqu''à ' + maxPassengers + ' passagers'}">max</span>
+  </div>
+
+  <form id="booking-form" method="post" th:object="${form}"
+        th:action="${counter} ? @{/agent/counter/{id}(id=${trip.id()})} : @{/trips/{id}/book(id=${trip.id()})}"
+        th:attr="data-price=${trip.price()}, data-max=${maxPassengers}">
+    <div class="booking-layout">
+      <div class="stack">
+        <section class="card" aria-labelledby="seat-title">
+          <div class="card-title">
+            <h2 id="seat-title">Plan des sièges</h2>
+            <span class="small muted" th:text="${trip.vehicleModel() + ' · ' + trip.serviceClassLabel()}">véhicule</span>
+          </div>
+          <div class="vehicle" th:classappend="${trip.mode().name() == 'PLANE'} ? 'plane' : (${trip.mode().name() == 'TRAIN'} ? 'train' : '')">
+            <div class="vehicle-front">
+              <span><svg th:replace="~{fragments/layout :: icon(${trip.mode().icon})}"></svg> <th:block th:text="${trip.mode().name() == 'PLANE'} ? 'Cockpit' : (${trip.mode().name() == 'TRAIN'} ? 'Sens de la marche' : 'Chauffeur')">Avant</th:block></span>
+              <span><svg th:replace="~{fragments/layout :: icon('door-open')}"></svg> Porte</span>
+            </div>
+            <div class="seat-row" th:each="row : ${seatMap.rows()}">
+              <th:block th:each="seat, it : ${row}">
+                <span class="aisle" th:if="${it.index == seatMap.aisleAfter()}" aria-hidden="true"></span>
+                <label class="seat">
+                  <input type="checkbox" th:value="${seat}" th:disabled="${seatMap.isOccupied(seat)}"
+                         th:attr="data-occupied=${seatMap.isOccupied(seat)} ? 'true' : null, aria-label=${'Siège ' + seat + (seatMap.isOccupied(seat) ? ' (occupé)' : '')}">
+                  <span th:text="${seat}" aria-hidden="true">1</span>
+                </label>
+              </th:block>
+            </div>
+          </div>
+          <div class="legend" aria-hidden="true">
+            <span><i></i>Libre</span><span><i class="sel"></i>Sélectionné</span><span><i class="occ"></i>Occupé</span>
+          </div>
+        </section>
+
+        <section class="card" aria-labelledby="pax-title">
+          <h2 id="pax-title">Passagers</h2>
+          <p class="muted small">Nom, prénom et numéro de pièce d'identité (CNI, passeport…) sont obligatoires pour chaque passager.</p>
+          <p id="passengers-empty" class="muted">Sélectionnez un ou plusieurs sièges sur le plan.</p>
+          <div id="passengers" aria-live="polite"></div>
+        </section>
+
+        <section class="card" th:if="${counter}" aria-labelledby="client-title">
+          <h2 id="client-title">Client au guichet</h2>
+          <div class="form-grid cols-2">
+            <div><label for="customerName">Nom du client</label><input class="input" id="customerName" th:field="*{customerName}"></div>
+            <div><label for="customerPhone">Téléphone</label><input class="input" type="tel" id="customerPhone" th:field="*{customerPhone}"></div>
+          </div>
+          <p class="small muted" style="margin-top:10px">Le paiement est encaissé en espèces et confirmé immédiatement.</p>
+        </section>
+      </div>
+
+      <aside class="card sticky" aria-labelledby="summary-title">
+        <h2 id="summary-title">Récapitulatif</h2>
+        <div class="summary-line"><span class="muted">Trajet</span><strong th:text="${trip.label()}">trajet</strong></div>
+        <div class="summary-line"><span class="muted">Départ</span><strong th:text="${#temporals.format(trip.departureAt(), 'dd/MM HH:mm')}">date</strong></div>
+        <div class="summary-line"><span class="muted">Classe</span><strong th:text="${trip.serviceClassLabel()}">classe</strong></div>
+        <div class="summary-line"><span class="muted">Prix unitaire</span><strong th:text="${@fmt.money(trip.price())}">prix</strong></div>
+        <div class="summary-line"><span class="muted">Sièges</span><strong data-seat-list>aucun</strong></div>
+        <div class="summary-line summary-total"><span>Total</span><span data-total>0 FCFA</span></div>
+        <p class="small muted" th:unless="${counter}" th:text="${'Vos sièges seront réservés ' + lockMinutes + ' minutes pour vous laisser le temps de payer.'}">verrou</p>
+        <button class="btn btn-primary btn-block" type="submit" data-submit disabled
+                th:text="${counter} ? 'Encaisser et émettre les billets' : 'Continuer vers le paiement'">Continuer</button>
+      </aside>
+    </div>
+
+    <div class="mobile-bar">
+      <div><div class="small muted"><span data-seat-count>0</span> siège(s)</div><strong data-total>0 FCFA</strong></div>
+      <span class="spacer"></span>
+      <button class="btn btn-primary" type="submit" data-submit disabled th:text="${counter} ? 'Encaisser' : 'Continuer'">Continuer</button>
+    </div>
+  </form>
+
+  <template id="passenger-template">
+    <div class="passenger-card">
+      <h4>Passager <span data-index>1</span> <span class="badge mode">Siège <span data-seat-label>1</span></span></h4>
+      <input type="hidden" data-f="seatNumber">
+      <div class="form-grid cols-3">
+        <div><label for-f="lastName">Nom</label><input class="input" data-f="lastName" required autocomplete="family-name"></div>
+        <div><label for-f="firstName">Prénom</label><input class="input" data-f="firstName" required autocomplete="given-name"></div>
+        <div><label for-f="idNumber">N° pièce d'identité</label><input class="input" data-f="idNumber" required></div>
+      </div>
+    </div>
+  </template>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

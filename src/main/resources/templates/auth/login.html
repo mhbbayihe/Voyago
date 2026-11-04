@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Connexion')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main class="container">
+  <div class="auth-wrap">
+    <div th:replace="~{fragments/layout :: flash}"></div>
+    <div class="alert error" role="alert" th:if="${param.error}">E-mail ou mot de passe incorrect, ou compte désactivé.</div>
+    <div class="card">
+      <h1>Connexion</h1>
+      <p class="muted">Accédez à vos réservations et à vos billets.</p>
+      <form th:action="@{/login}" method="post">
+        <div class="field">
+          <label for="email">E-mail</label>
+          <input class="input" type="email" id="email" name="email" autocomplete="username" required autofocus>
+        </div>
+        <div class="field">
+          <label for="password">Mot de passe</label>
+          <input class="input" type="password" id="password" name="password" autocomplete="current-password" required>
+        </div>
+        <button class="btn btn-primary btn-block" type="submit">Se connecter</button>
+      </form>
+      <p class="small muted" style="margin-top:14px">Pas encore de compte ? <a th:href="@{/register}">Créer un compte</a></p>
+    </div>
+    <div class="card demo-accounts">
+      <strong>Comptes de démonstration</strong> <span class="muted">(cliquez pour remplir)</span>
+      <button type="button" data-demo-email="client@voyago.cm" data-demo-password="Client@2026"><svg th:replace="~{fragments/layout :: icon('user')}"></svg> Client : client@voyago.cm</button>
+      <button type="button" data-demo-email="agent@sanaga.cm" data-demo-password="Agent@2026"><svg th:replace="~{fragments/layout :: icon('bus')}"></svg> Agent bus (Sanaga Express) : agent@sanaga.cm</button>
+      <button type="button" data-demo-email="agent@rail.cm" data-demo-password="Agent@2026"><svg th:replace="~{fragments/layout :: icon('train-front')}"></svg> Agent train : agent@rail.cm</button>
+      <button type="button" data-demo-email="agent@airmungo.cm" data-demo-password="Agent@2026"><svg th:replace="~{fragments/layout :: icon('plane')}"></svg> Agent avion (Air Mungo) : agent@airmungo.cm</button>
+      <button type="button" data-demo-email="admin@voyago.cm" data-demo-password="Admin@2026"><svg th:replace="~{fragments/layout :: icon('shield-check')}"></svg> Administrateur : admin@voyago.cm</button>
+    </div>
+  </div>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

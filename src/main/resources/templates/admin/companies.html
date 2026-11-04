@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Compagnies')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main class="container">
+  <div class="bo">
+    <nav th:replace="~{fragments/layout :: adminNav('companies')}"></nav>
+    <section>
+      <div th:replace="~{fragments/layout :: flash}"></div>
+      <div class="page-head"><div><h1>Compagnies</h1><p class="muted">Transporteurs routiers, ferroviaires et aériens partenaires.</p></div></div>
+      <form class="card" method="post" th:action="@{/admin/companies}">
+        <h2>Nouvelle compagnie</h2>
+        <div class="form-grid cols-4">
+          <div><label for="name">Nom</label><input class="input" id="name" name="name" required></div>
+          <div><label for="mode">Mode</label><select class="input" id="mode" name="mode"><option th:each="m : ${modes}" th:value="${m}" th:text="${m.label}"></option></select></div>
+          <div><label for="phone">Téléphone</label><input class="input" id="phone" name="phone"></div>
+          <div><label for="email">E-mail</label><input class="input" type="email" id="email" name="email"></div>
+        </div>
+        <button class="btn btn-primary" type="submit" style="margin-top:12px">Créer</button>
+      </form>
+      <div class="card">
+        <div class="table-wrap">
+          <table class="table stack-mobile">
+            <thead><tr><th>Nom</th><th>Mode</th><th>Contact</th><th>Statut</th><th></th></tr></thead>
+            <tbody>
+              <tr th:each="c : ${companies}">
+                <td data-label="Nom"><strong th:text="${c.name}">nom</strong></td>
+                <td data-label="Mode"><svg th:replace="~{fragments/layout :: icon(${c.mode.icon})}"></svg> <th:block th:text="${c.mode.label}">mode</th:block></td>
+                <td data-label="Contact" class="small" th:text="${c.phone + ' · ' + c.email}">contact</td>
+                <td data-label="Statut"><span class="badge" th:classappend="${c.active} ? 'success' : 'danger'" th:text="${c.active} ? 'Active' : 'Suspendue'">statut</span></td>
+                <td data-label="Action">
+                  <form method="post" th:action="@{/admin/companies/{id}/toggle(id=${c.id})}">
+                    <input type="hidden" name="active" th:value="${!c.active}">
+                    <button class="btn btn-sm" th:classappend="${c.active} ? 'btn-danger' : 'btn-outline'" type="submit" th:text="${c.active} ? 'Suspendre' : 'Réactiver'">action</button>
+                  </form>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

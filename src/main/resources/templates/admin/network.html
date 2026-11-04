@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Gares et lignes')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main class="container">
+  <div class="bo">
+    <nav th:replace="~{fragments/layout :: adminNav('network')}"></nav>
+    <section>
+      <div th:replace="~{fragments/layout :: flash}"></div>
+      <div class="page-head"><div><h1>Gares et lignes</h1><p class="muted">Gares routières, gares ferroviaires, aéroports et lignes qui les relient.</p></div></div>
+
+      <div class="grid-2">
+        <form class="card" method="post" th:action="@{/admin/stations}">
+          <h2>Nouveau point d'embarquement</h2>
+          <div class="field"><label for="sname">Nom</label><input class="input" id="sname" name="name" required></div>
+          <div class="form-grid cols-2">
+            <div><label for="city">Ville</label><input class="input" id="city" name="city" required></div>
+            <div><label for="smode">Type</label><select class="input" id="smode" name="mode"><option th:each="m : ${modes}" th:value="${m}" th:text="${m.stationLabel}"></option></select></div>
+          </div>
+          <button class="btn btn-primary" type="submit" style="margin-top:12px">Ajouter</button>
+        </form>
+        <form class="card" method="post" th:action="@{/admin/routes}">
+          <h2>Nouvelle ligne</h2>
+          <div class="form-grid cols-2">
+            <div><label for="departureId">Départ</label><select class="input" id="departureId" name="departureId"><option th:each="s : ${stations}" th:value="${s.id}" th:text="${s.city + ' - ' + s.name + ' (' + s.mode.label + ')'}"></option></select></div>
+            <div><label for="arrivalId">Arrivée</label><select class="input" id="arrivalId" name="arrivalId"><option th:each="s : ${stations}" th:value="${s.id}" th:text="${s.city + ' - ' + s.name + ' (' + s.mode.label + ')'}"></option></select></div>
+            <div><label for="distanceKm">Distance (km)</label><input class="input" type="number" min="1" id="distanceKm" name="distanceKm" required></div>
+            <div><label for="durationMinutes">Durée (minutes)</label><input class="input" type="number" min="1" id="durationMinutes" name="durationMinutes" required></div>
+          </div>
+          <label class="checkbox" style="margin-top:10px"><input type="checkbox" name="bothWays" value="true" checked> Créer aussi le trajet retour</label>
+          <button class="btn btn-primary" type="submit" style="margin-top:12px">Créer la ligne</button>
+        </form>
+      </div>
+
+      <div class="grid-2" style="margin-top:20px">
+        <div class="card">
+          <h2 th:text="${'Points d''embarquement (' + #lists.size(stations) + ')'}">Gares</h2>
+          <div class="summary-line" th:each="s : ${stations}">
+            <span><strong th:text="${s.city}">ville</strong> <span class="small muted" th:text="${s.name}">nom</span></span>
+            <span class="badge mode"><svg th:replace="~{fragments/layout :: icon(${s.mode.icon})}"></svg> <th:block th:text="${s.mode.stationLabel}">type</th:block></span>
+          </div>
+        </div>
+        <div class="card">
+          <h2 th:text="${'Lignes (' + #lists.size(routes) + ')'}">Lignes</h2>
+          <div class="summary-line" th:each="r : ${routes}">
+            <span><svg th:replace="~{fragments/layout :: icon(${r.mode.icon})}"></svg> <th:block th:text="${r.label}">ligne</th:block></span>
+            <span class="small muted nowrap" th:text="${r.distanceKm + ' km · ' + @fmt.duration(r.durationMinutes)}">km</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

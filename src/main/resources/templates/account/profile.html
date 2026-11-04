@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Mon compte')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main class="container">
+  <div th:replace="~{fragments/layout :: flash}"></div>
+
+  <div class="page-head">
+    <div>
+      <p class="eyebrow">Mon compte</p>
+      <h1 th:text="${'Bonjour, ' + #strings.arraySplit(user.fullName, ' ')[0]}">Bonjour</h1>
+      <p class="muted">Retrouvez votre activité, vos voyages et gérez vos informations personnelles.</p>
+    </div>
+    <a class="btn btn-primary" th:href="@{/}" th:if="${user.role.name() == 'CLIENT'}"><svg th:replace="~{fragments/layout :: icon('search')}"></svg> Réserver un voyage</a>
+    <a class="btn btn-primary" th:href="@{/agent}" th:if="${user.role.name() == 'AGENT'}"><svg th:replace="~{fragments/layout :: icon('layout-dashboard')}"></svg> Espace agent</a>
+    <a class="btn btn-primary" th:href="@{/admin}" th:if="${user.role.name() == 'ADMIN'}"><svg th:replace="~{fragments/layout :: icon('shield-check')}"></svg> Administration</a>
+  </div>
+
+  <div class="account-layout">
+    <!-- Fiche d'identité -->
+    <aside class="card profile-card">
+      <div class="avatar" aria-hidden="true" th:text="${user.initials}">CD</div>
+      <h2 th:text="${user.fullName}">Nom</h2>
+      <p class="muted small" th:text="${user.email}">email</p>
+      <span class="badge mode" th:text="${user.role.label}">Client</span>
+
+      <ul class="info-list">
+        <li><svg th:replace="~{fragments/layout :: icon('smartphone')}"></svg>
+          <span>Téléphone</span><strong th:text="${user.phone != null and !#strings.isEmpty(user.phone) ? user.phone : 'Non renseigné'}">tel</strong></li>
+        <li><svg th:replace="~{fragments/layout :: icon('calendar-days')}"></svg>
+          <span>Membre depuis</span><strong th:text="${#temporals.format(user.createdAt, 'd MMMM yyyy')}">date</strong></li>
+        <li><svg th:replace="~{fragments/layout :: icon('badge-check')}"></svg>
+          <span>Statut du compte</span><strong class="text-success" th:text="${user.active} ? 'Actif' : 'Désactivé'">Actif</strong></li>
+        <li th:if="${company != null}"><svg th:replace="~{fragments/layout :: icon('building-2')}"></svg>
+          <span>Compagnie</span><strong th:text="${company.name}">compagnie</strong></li>
+        <li th:if="${summary.favoriteRoute() != null}"><svg th:replace="~{fragments/layout :: icon('route')}"></svg>
+          <span>Trajet favori</span><strong th:text="${summary.favoriteRoute()}">trajet</strong></li>
+      </ul>
+
+      <nav class="quick-links" aria-label="Raccourcis">
+        <a th:href="@{/account/bookings}"><svg th:replace="~{fragments/layout :: icon('ticket')}"></svg> Mes réservations <svg th:replace="~{fragments/layout :: icon('arrow-right')}"></svg></a>
+        <a th:href="@{/account/inbox}"><svg th:replace="~{fragments/layout :: icon('mail')}"></svg> Mes messages <svg th:replace="~{fragments/layout :: icon('arrow-right')}"></svg></a>
+        <a href="#securite"><svg th:replace="~{fragments/layout :: icon('lock')}"></svg> Sécurité du compte <svg th:replace="~{fragments/layout :: icon('arrow-right')}"></svg></a>
+      </nav>
+      <form th:action="@{/logout}" method="post">
+        <button class="btn btn-outline btn-sm" type="submit"><svg th:replace="~{fragments/layout :: icon('log-out')}"></svg> Se déconnecter</button>
+      </form>
+    </aside>
+
+    <div class="stack-lg">
+      <!-- Chiffres clés -->
+      <div class="grid-4">
+        <div class="kpi">
+          <div class="label">Réservations</div>
+          <div class="value" th:text="${summary.totalBookings()}">0</div>
+          <div class="hint" th:text="${summary.ticketCount() + ' billet(s) émis'}">billets</div>
+        </div>
+        <div class="kpi">
+          <div class="label">Voyages à venir</div>
+          <div class="value" th:text="${summary.upcomingTrips()}">0</div>
+          <div class="hint">confirmés et payés</div>
+        </div>
+        <div class="kpi">
+          <div class="label">Voyages effectués</div>
+          <div class="value" th:text="${summary.completedTrips()}">0</div>
+          <div class="hint" th:text="${'membre depuis ' + memberDays + ' jour(s)'}">membre</div>
+        </div>
+        <div class="kpi">
+          <div class="label">Total dépensé</div>
+          <div class="value" th:text="${@fmt.money(summary.totalSpent())}">0</div>
+          <div class="hint" th:text="${summary.totalRefunded() > 0 ? @fmt.money(summary.totalRefunded()) + ' remboursés' : 'aucun remboursement'}">remb.</div>
+        </div>
+      </div>
+
+      <!-- Prochain voyage -->
+      <section class="card next-trip" th:if="${summary.nextTrip() != null}" th:with="n=${summary.nextTrip()}">
+        <div class="next-trip-icon"><svg th:replace="~{fragments/layout :: icon(${n.mode.icon})}"></svg></div>
+        <div class="next-trip-body">
+          <p class="eyebrow">Votre prochain voyage</p>
+          <h2 th:text="${n.tripLabel}">trajet</h2>
+          <p class="muted small">
+            <span th:text="${#temporals.format(n.departureAt, 'EEEE d MMMM yyyy à HH:mm')}">date</span> ·
+            <span th:text="${n.companyName}">compagnie</span> ·
+            <span th:text="${n.serviceClassLabel}">classe</span> ·
+            <span th:text="${'Siège(s) ' + n.seatsLabel}">sièges</span>
+          </p>
+          <p class="small" style="margin:0"><svg th:replace="~{fragments/layout :: icon('map-pin')}"></svg> <span th:text="${'Embarquement : ' + n.fromStation}">gare</span></p>
+        </div>
+        <div class="next-trip-side">
+          <div class="countdown-days">
+            <strong th:text="${summary.daysToNextTrip() == 0 ? 'Aujourd’hui' : (summary.daysToNextTrip() == 1 ? 'Demain' : 'J-' + summary.daysToNextTrip())}">J-3</strong>
+            <span class="small muted">avant le départ</span>
+          </div>
+          <a class="btn btn-outline btn-sm" th:href="@{/bookings/{id}(id=${n.id})}"><svg th:replace="~{fragments/layout :: icon('qr-code')}"></svg> Voir mes billets</a>
+        </div>
+      </section>
+      <section class="card next-trip empty-trip" th:if="${summary.nextTrip() == null and user.role.name() == 'CLIENT'}">
+        <div class="next-trip-icon"><svg th:replace="~{fragments/layout :: icon('compass')}"></svg></div>
+        <div class="next-trip-body">
+          <p class="eyebrow">Votre prochain voyage</p>
+          <h2>Aucun voyage prévu pour le moment</h2>
+          <p class="muted small" style="margin:0">Bus, train ou avion : trouvez votre prochain départ en quelques secondes.</p>
+        </div>
+        <div class="next-trip-side"><a class="btn btn-primary btn-sm" th:href="@{/}">Rechercher un voyage</a></div>
+      </section>
+
+      <!-- Informations et sécurité -->
+      <div class="grid-2">
+        <form class="card" method="post" th:action="@{/account/profile}">
+          <div class="card-title"><h2>Informations personnelles</h2><svg th:replace="~{fragments/layout :: icon('user')}"></svg></div>
+          <div class="field"><label for="fullName">Nom complet</label><input class="input" id="fullName" name="fullName" th:value="${user.fullName}" required autocomplete="name"></div>
+          <div class="field"><label for="email">Adresse e-mail</label><input class="input" id="email" th:value="${user.email}" disabled>
+            <p class="hint-text">L'e-mail sert d'identifiant : il ne peut pas être modifié.</p></div>
+          <div class="field"><label for="phone">Téléphone (Mobile Money et SMS)</label><input class="input" type="tel" id="phone" name="phone" th:value="${user.phone}" placeholder="6XX XX XX XX" autocomplete="tel"></div>
+          <button class="btn btn-primary" type="submit">Enregistrer les modifications</button>
+        </form>
+
+        <form class="card" id="securite" method="post" th:action="@{/account/password}">
+          <div class="card-title"><h2>Sécurité</h2><svg th:replace="~{fragments/layout :: icon('lock')}"></svg></div>
+          <div class="field"><label for="currentPassword">Mot de passe actuel</label><input class="input" type="password" id="currentPassword" name="currentPassword" required autocomplete="current-password"></div>
+          <div class="form-grid cols-2">
+            <div class="field"><label for="newPassword">Nouveau mot de passe</label><input class="input" type="password" id="newPassword" name="newPassword" minlength="8" required autocomplete="new-password"></div>
+            <div class="field"><label for="confirmation">Confirmation</label><input class="input" type="password" id="confirmation" name="confirmation" minlength="8" required autocomplete="new-password"></div>
+          </div>
+          <p class="hint-text">8 caractères minimum. Votre mot de passe est chiffré (BCrypt) : personne, même l'équipe VoyaGo, ne peut le lire.</p>
+          <button class="btn btn-outline" type="submit">Changer le mot de passe</button>
+        </form>
+      </div>
+
+      <!-- Activité récente -->
+      <div class="grid-2">
+        <section class="card">
+          <div class="card-title"><h2>Dernières réservations</h2><a class="small" th:href="@{/account/bookings}">Tout voir</a></div>
+          <p class="muted small" th:if="${#lists.isEmpty(recentBookings)}">Vous n'avez pas encore réservé de voyage.</p>
+          <a class="activity-row" th:each="b : ${recentBookings}" th:href="@{/bookings/{id}(id=${b.id})}">
+            <span class="activity-icon"><svg th:replace="~{fragments/layout :: icon(${b.mode.icon})}"></svg></span>
+            <span class="activity-text">
+              <strong th:text="${b.tripLabel}">trajet</strong>
+              <span class="small muted" th:text="${#temporals.format(b.departureAt, 'dd/MM/yyyy HH:mm') + ' · ' + b.reference}">date</span>
+            </span>
+            <span class="activity-end">
+              <span class="small" th:text="${@fmt.money(b.totalAmount)}">montant</span>
+              <span class="badge" th:classappend="${b.status.tone}" th:text="${b.status.label}">statut</span>
+            </span>
+          </a>
+        </section>
+
+        <section class="card">
+          <div class="card-title"><h2>Derniers messages</h2><a class="small" th:href="@{/account/inbox}">Tout voir</a></div>
+          <p class="muted small" th:if="${#lists.isEmpty(recentMessages)}">Aucun message pour le moment.</p>
+          <a class="activity-row" th:each="m : ${recentMessages}" th:href="@{/account/inbox}">
+            <span class="activity-icon"><svg th:replace="~{fragments/layout :: icon(${m.channel.name() == 'EMAIL'} ? 'mail' : 'smartphone')}"></svg></span>
+            <span class="activity-text">
+              <strong th:text="${m.subject != null ? m.subject : #strings.abbreviate(m.body, 48)}">sujet</strong>
+              <span class="small muted" th:text="${m.channel.label + ' · ' + #temporals.format(m.createdAt, 'dd/MM HH:mm')}">date</span>
+            </span>
+            <span class="activity-end" th:if="${m.attachmentName != null}"><svg th:replace="~{fragments/layout :: icon('paperclip')}"></svg></span>
+          </a>
+        </section>
+      </div>
+
+      <section class="card privacy">
+        <svg th:replace="~{fragments/layout :: icon('shield-check')}"></svg>
+        <div>
+          <h2>Vos données personnelles</h2>
+          <p class="small muted" style="margin:0">VoyaGo utilise vos informations uniquement pour gérer vos réservations, vos billets et vos notifications.
+            Aucune donnée de votre compte Mobile Money n'est conservée : seule la référence de transaction est enregistrée.
+            Les pièces d'identité des passagers ne servent qu'au contrôle à l'embarquement.</p>
+        </div>
+      </section>
+    </div>
+  </div>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

@@ -1,0 +1,149 @@
+@startuml mcd
+' VoyaGo - Modèle physique de données (crow's foot) · v1.0 · Groupe 15 · 2026-11-04
+title VoyaGo - Modèle physique de données
+hide circle
+skinparam linetype ortho
+
+entity app_user {
+  * id : uuid <<PK>>
+  --
+  * full_name : varchar
+  * email : varchar <<UNIQUE>>
+  phone : varchar
+  * password_hash : varchar (BCrypt)
+  * role : varchar
+  company_id : uuid
+  active : boolean
+  * created_at : timestamp
+}
+entity company {
+  * id : uuid <<PK>>
+  --
+  * name : varchar <<UNIQUE>>
+  * mode : varchar (BUS|TRAIN|PLANE)
+  phone, email : varchar
+  active : boolean
+}
+entity station {
+  * id : uuid <<PK>>
+  --
+  * name, city : varchar
+  * mode : varchar
+}
+entity route {
+  * id : uuid <<PK>>
+  --
+  * departure_station_id : uuid <<FK>>
+  * arrival_station_id : uuid <<FK>>
+  * distance_km, duration_minutes : int
+}
+entity vehicle {
+  * id : uuid <<PK>>
+  --
+  * company_id : uuid <<FK>>
+  * registration : varchar <<UNIQUE>>
+  * model, mode, service_class : varchar
+  * seat_count, seats_per_row : int
+}
+entity trip {
+  * id : uuid <<PK>>
+  --
+  * route_id : uuid <<FK>>
+  * vehicle_id : uuid <<FK>>
+  * departure_at : timestamp <<INDEX>>
+  * arrival_at : timestamp
+  * price : bigint (XAF)
+  * status : varchar
+  version : bigint
+}
+entity booking {
+  * id : uuid <<PK>>
+  --
+  * reference : varchar <<UNIQUE>>
+  * customer_id : uuid <<INDEX>>
+  * trip_id, company_id : uuid
+  * trip_label, company_name, mode : varchar
+  * departure_at : timestamp
+  * unit_price, total_amount, refund_amount : bigint
+  * status : varchar
+  * created_at, expires_at : timestamp <<INDEX (status, expires_at)>>
+  confirmed_at, cancelled_at : timestamp
+  sold_by_agent_id : uuid
+  version : bigint
+}
+entity passenger {
+  * id : uuid <<PK>>
+  --
+  * booking_id : uuid <<FK>>
+  * first_name, last_name, id_number : varchar
+  * seat_number : int
+}
+entity seat_reservation {
+  * id : uuid <<PK>>
+  --
+  * trip_id : uuid
+  * seat_number : int
+  * booking_id : uuid
+  <<UNIQUE (trip_id, seat_number)>>
+}
+entity ticket {
+  * id : uuid <<PK>>
+  --
+  * code : varchar <<UNIQUE>>
+  * booking_id, trip_id, company_id : uuid
+  * passenger_name, passenger_id_number : varchar
+  * seat_number : int
+  * signature : varchar (HMAC)
+  * status : varchar
+  used_at : timestamp
+  version : bigint
+}
+entity payment {
+  * id : uuid <<PK>>
+  --
+  * booking_id : uuid <<INDEX>>
+  * amount : bigint
+  * method, status : varchar
+  payer_phone : varchar
+  external_reference : varchar <<UNIQUE>>
+  * idempotency_key : varchar <<UNIQUE>>
+  refunded_amount : bigint
+  version : bigint
+}
+entity refund {
+  * id : uuid <<PK>>
+  --
+  * payment_id : uuid
+  * amount : bigint
+  external_reference, reason : varchar
+}
+entity notification {
+  * id : uuid <<PK>>
+  --
+  * user_id : uuid <<INDEX>>
+  * channel, recipient, status : varchar
+  subject, body, attachment_name : varchar
+  booking_id : uuid
+}
+entity audit_log {
+  * id : uuid <<PK>>
+  --
+  * actor, action : varchar
+  details : varchar(1000)
+  * created_at : timestamp
+}
+
+station ||--o{ route : départ
+station ||--o{ route : arrivée
+company ||--o{ vehicle
+route ||--o{ trip
+vehicle ||--o{ trip
+booking ||--|{ passenger
+booking ||--|{ seat_reservation
+booking ||--o{ ticket
+booking ||--o{ payment
+payment ||--o{ refund
+trip ||..o{ booking : trip_id (sans FK : modules séparés)
+app_user ||..o{ booking : customer_id
+app_user ||..o{ notification
+@enduml

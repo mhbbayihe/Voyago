@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head(${'Réservation ' + booking.reference})}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main class="container">
+  <th:block th:if="${booking.status.name() == 'CONFIRMED'}"><div th:replace="~{fragments/layout :: steps(4)}"></div></th:block>
+  <div th:replace="~{fragments/layout :: flash}"></div>
+
+  <div class="page-head">
+    <div>
+      <p class="small muted" style="margin:0">Réservation</p>
+      <h1 class="row"><span th:text="${booking.reference}">VG-XXXX</span>
+        <span class="badge" th:classappend="${booking.status.tone}" th:text="${booking.status.label}">Statut</span></h1>
+      <p class="muted">
+        <svg th:replace="~{fragments/layout :: icon(${booking.mode.icon})}"></svg> <span th:text="${booking.tripLabel}">trajet</span> ·
+        <span th:text="${#temporals.format(booking.departureAt, 'EEEE d MMMM yyyy à HH:mm')}">date</span> ·
+        <span th:text="${booking.companyName}">compagnie</span>
+      </p>
+    </div>
+    <div class="row">
+      <a class="btn btn-primary" th:if="${!#lists.isEmpty(tickets)}" th:href="@{/bookings/{id}/tickets.pdf(id=${booking.id})}" target="_blank"><svg th:replace="~{fragments/layout :: icon('download')}"></svg> Télécharger les billets (PDF)</a>
+      <a class="btn btn-primary" th:if="${payable}" th:href="@{/bookings/{id}/pay(id=${booking.id})}">Payer maintenant</a>
+    </div>
+  </div>
+
+  <div class="alert warning" th:if="${payable}">
+    <svg th:replace="~{fragments/layout :: icon('clock')}"></svg>
+    <span>En attente de paiement. Vos sièges sont réservés encore
+      <strong class="countdown" style="padding:2px 10px" th:attr="data-countdown=${secondsLeft}"><span data-countdown-label>--:--</span></strong>.</span>
+  </div>
+  <div class="alert info" th:if="${booking.status.name() == 'EXPIRED'}">Le délai de paiement est dépassé : les sièges ont été libérés. Vous pouvez refaire une réservation.</div>
+  <div class="alert info" th:if="${booking.status.name() == 'CANCELLED'}"
+       th:text="${'Réservation annulée le ' + #temporals.format(booking.cancelledAt, 'dd/MM/yyyy à HH:mm') + (booking.refundAmount > 0 ? ' · remboursement de ' + @fmt.money(booking.refundAmount) : '')}">annulée</div>
+
+  <section aria-label="Billets" th:if="${!#lists.isEmpty(tickets)}">
+    <h2>Billets électroniques</h2>
+    <article class="ticket" th:each="t : ${tickets}" th:classappend="${t.status.name() == 'USED'} ? 'used' : (${t.status.name() == 'CANCELLED'} ? 'cancelled' : '')">
+      <div class="ticket-main">
+        <div class="row between">
+          <strong th:text="${t.passengerName}">Passager</strong>
+          <span class="badge" th:classappend="${t.status.tone}" th:text="${t.status.label}">Valide</span>
+        </div>
+        <div class="kv">
+          <div><span>Trajet</span><strong th:text="${t.tripLabel}">trajet</strong></div>
+          <div><span>Départ</span><strong th:text="${#temporals.format(t.departureAt, 'dd/MM/yyyy HH:mm')}">date</strong></div>
+          <div><span>Siège</span><strong th:text="${t.seatNumber}">1</strong></div>
+          <div><span>Embarquement</span><strong th:text="${t.fromStation}">gare</strong></div>
+          <div><span>Classe</span><strong th:text="${t.serviceClassLabel}">classe</strong></div>
+          <div><span>N° de billet</span><strong class="mono" th:text="${t.code}">code</strong></div>
+          <div><span>Pièce d'identité</span><strong th:text="${t.passengerIdNumber}">CNI</strong></div>
+          <div th:if="${t.usedAt != null}"><span>Utilisé le</span><strong th:text="${#temporals.format(t.usedAt, 'dd/MM HH:mm')}">date</strong></div>
+        </div>
+      </div>
+      <div class="ticket-qr">
+        <img th:src="@{/tickets/{id}/qr.png(id=${t.id})}" th:alt="${'QR code du billet ' + t.code}" width="170" height="170" loading="lazy">
+        <a class="small" th:href="@{/tickets/{id}/ticket.pdf(id=${t.id})}" target="_blank">PDF de ce billet</a>
+      </div>
+    </article>
+  </section>
+
+  <div class="grid-2 section">
+    <section class="card" th:if="${#lists.isEmpty(tickets)}">
+      <h2>Passagers</h2>
+      <div class="summary-line" th:each="p : ${booking.passengers}">
+        <span th:text="${p.fullName + ' (' + p.idNumber + ')'}">nom</span><strong th:text="${'Siège ' + p.seatNumber}">siège</strong>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Paiement</h2>
+      <div class="summary-line"><span class="muted">Montant total</span><strong th:text="${@fmt.money(booking.totalAmount)}">total</strong></div>
+      <div class="summary-line" th:each="p : ${payments}">
+        <span><span th:text="${p.method.label}">MoMo</span> <span class="small muted" th:text="${#temporals.format(p.createdAt, 'dd/MM HH:mm')}"></span></span>
+        <span class="badge" th:classappend="${p.status.tone}" th:text="${p.status.label}">statut</span>
+      </div>
+      <p class="muted small" th:if="${#lists.isEmpty(payments)}">Aucun paiement pour le moment.</p>
+    </section>
+
+    <section class="card" th:if="${cancellable}">
+      <h2>Annuler la réservation</h2>
+      <p class="small muted" th:text="${refundPolicy}">barème</p>
+      <p th:if="${booking.status.name() == 'CONFIRMED'}">Si vous annulez maintenant, vous serez remboursé de
+        <strong th:text="${@fmt.money(refund.amount())}">0</strong> (<span th:text="${refund.percent()}">0</span> %).</p>
+      <form method="post" th:action="@{/bookings/{id}/cancel(id=${booking.id})}"
+            th:attr="data-confirm=${'Confirmer l''annulation ? Remboursement : ' + refund.amount() + ' FCFA'}">
+        <button class="btn btn-danger" type="submit">Annuler la réservation</button>
+      </form>
+    </section>
+  </div>
+
+  <p style="margin-top:20px"><a th:href="${me != null and me.isAgent()} ? @{/agent/sales} : @{/account/bookings}">← Retour à la liste</a></p>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

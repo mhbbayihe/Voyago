@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Liste des passagers')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main class="container">
+  <div class="bo">
+    <nav th:replace="~{fragments/layout :: agentNav('trips')}"></nav>
+    <section>
+      <div class="page-head">
+        <div>
+          <h1>Liste des passagers</h1>
+          <p class="muted" th:text="${trip.label() + ' · ' + #temporals.format(trip.departureAt(), 'EEEE d MMMM HH:mm') + ' · ' + trip.vehicleRegistration()}">trajet</p>
+        </div>
+        <div class="row">
+          <button class="btn btn-outline" type="button" onclick="window.print()"><svg th:replace="~{fragments/layout :: icon('printer')}"></svg> Imprimer</button>
+          <a class="btn btn-primary" th:href="@{/agent/counter/{id}(id=${trip.id()})}">Vendre un billet</a>
+        </div>
+      </div>
+      <div class="card">
+        <p class="muted small" th:text="${#lists.size(tickets) + ' billet(s) · ' + trip.availableSeats() + ' place(s) libre(s) sur ' + trip.seatCount()}">résumé</p>
+        <div class="table-wrap">
+          <table class="table stack-mobile">
+            <thead><tr><th>Siège</th><th>Passager</th><th>Pièce d'identité</th><th>Billet</th><th>Statut</th></tr></thead>
+            <tbody>
+              <tr th:each="t : ${tickets}">
+                <td data-label="Siège"><strong th:text="${t.seatNumber}">1</strong></td>
+                <td data-label="Passager" th:text="${t.passengerName}">nom</td>
+                <td data-label="Pièce" th:text="${t.passengerIdNumber}">CNI</td>
+                <td data-label="Billet" class="mono" th:text="${t.code}">code</td>
+                <td data-label="Statut"><span class="badge" th:classappend="${t.status.tone}" th:text="${t.status.label}">statut</span></td>
+              </tr>
+              <tr th:if="${#lists.isEmpty(tickets)}"><td colspan="5" class="muted">Aucun billet vendu pour ce voyage.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

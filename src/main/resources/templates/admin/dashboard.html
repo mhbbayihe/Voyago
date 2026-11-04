@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Administration')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main class="container">
+  <div class="bo">
+    <nav th:replace="~{fragments/layout :: adminNav('dashboard')}"></nav>
+    <section>
+      <div class="page-head"><div><h1>Tableau de bord global</h1><p class="muted">Activité de toute la plateforme.</p></div></div>
+
+      <div class="grid-4">
+        <div class="kpi"><div class="label">Revenus</div><div class="value" th:text="${@fmt.money(stats.revenue())}">0</div><div class="hint" th:text="${'Panier moyen ' + @fmt.money(stats.averageBasket())}">hint</div></div>
+        <div class="kpi"><div class="label">Billets vendus</div><div class="value" th:text="${stats.ticketsSold()}">0</div><div class="hint" th:text="${stats.confirmed() + ' réservations confirmées'}">hint</div></div>
+        <div class="kpi"><div class="label">Remplissage (7 j)</div><div class="value" th:text="${avgFill + ' %'}">0</div><div class="hint" th:text="${tripCount + ' voyages programmés'}">hint</div></div>
+        <div class="kpi"><div class="label">Plateforme</div><div class="value" th:text="${userCount}">0</div><div class="hint" th:text="${'utilisateurs · ' + companyCount + ' compagnies'}">hint</div></div>
+      </div>
+
+      <div class="grid-3" style="margin-top:20px">
+        <div class="card">
+          <h2>Revenus par mode</h2>
+          <div class="hbar" th:each="m : ${modes}" th:with="v=${stats.revenueByMode().get(m) != null ? stats.revenueByMode().get(m) : 0}">
+            <div class="top"><span><svg th:replace="~{fragments/layout :: icon(${m.icon})}"></svg> <th:block th:text="${m.label}">mode</th:block></span><strong th:text="${@fmt.money(v)}">0</strong></div>
+            <div class="track"><i th:style="${'width:' + (stats.revenue() == 0 ? 0 : v * 100 / stats.revenue()) + '%'}"></i></div>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Réservations</h2>
+          <div class="summary-line"><span><span class="badge success">Confirmées</span></span><strong th:text="${stats.confirmed()}">0</strong></div>
+          <div class="summary-line"><span><span class="badge warning">En attente</span></span><strong th:text="${stats.pending()}">0</strong></div>
+          <div class="summary-line"><span><span class="badge danger">Annulées</span></span><strong th:text="${stats.cancelled()}">0</strong></div>
+          <div class="summary-line"><span><span class="badge muted">Expirées</span></span><strong th:text="${stats.expired()}">0</strong></div>
+          <div class="summary-line summary-total"><span>Remboursé</span><span th:text="${@fmt.money(stats.refunded())}">0</span></div>
+        </div>
+        <div class="card">
+          <h2>Ventes sur 14 jours</h2>
+          <div class="bars" role="img" aria-label="Histogramme des revenus journaliers">
+            <div class="bar" th:each="d : ${stats.last14Days()}" th:title="${#temporals.format(d.day(), 'dd/MM') + ' : ' + @fmt.money(d.revenue())}">
+              <i th:style="${'height:' + d.percentOfMax() + '%'}"></i><small th:text="${#temporals.format(d.day(), 'dd')}">01</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2" style="margin-top:20px">
+        <div class="card">
+          <h2>Top des lignes</h2>
+          <div class="hbar" th:each="r : ${stats.byRoute()}">
+            <div class="top"><span th:text="${r.label() + ' (' + r.tickets() + ' billets)'}">ligne</span><strong th:text="${@fmt.money(r.revenue())}">0</strong></div>
+            <div class="track"><i th:style="${'width:' + (stats.byRoute()[0].revenue() == 0 ? 0 : r.revenue() * 100 / stats.byRoute()[0].revenue()) + '%'}"></i></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title"><h2>Dernières réservations</h2><a th:href="@{/admin/bookings}">Tout voir →</a></div>
+          <div class="summary-line" th:each="b : ${recent}">
+            <span><a class="mono" th:href="@{/bookings/{id}(id=${b.id})}" th:text="${b.reference}">ref</a> <span class="small muted"><svg th:replace="~{fragments/layout :: icon(${b.mode.icon})}"></svg> <th:block th:text="${b.tripLabel}">trajet</th:block></span></span>
+            <span class="badge" th:classappend="${b.status.tone}" th:text="${b.status.label}">statut</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

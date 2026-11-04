@@ -1,0 +1,12 @@
+# Profil de production conforme au cahier des charges (PostgreSQL).
+# Lancement : ./mvnw spring-boot:run -Dspring-boot.run.profiles=postgres
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/voyago}
+    username: ${DB_USER:voyago}
+    password: ${DB_PASSWORD:voyago}
+  h2:
+    console:
+      enabled: false
+  thymeleaf:
+    cache: true

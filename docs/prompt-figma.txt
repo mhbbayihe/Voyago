@@ -1,0 +1,16 @@
+Conçois la maquette d'une application web responsive (mobile 360 px d'abord, puis tablette et desktop 1280 px) nommée VoyaGo : plateforme camerounaise de réservation de billets de bus interurbains. Interface en français, prix en FCFA.
+
+Style : moderne, professionnel, rassurant. Bleu profond #1E3A8A (principal), turquoise #14B8A6 (actions), vert/orange/rouge pour succès/alerte/erreur, fond clair. Police Inter 16 px, coins arrondis 12 px, ombres légères, icônes Lucide, zones tactiles ≥ 44 px, contraste WCAG AA.
+
+Écrans :
+1. Accueil : en-tête (logo, Connexion, Inscription), hero avec recherche (départ, arrivée, date, passagers), trajets populaires (Douala → Yaoundé…), atouts (Mobile Money, billet QR code).
+2. Résultats : cartes de voyage (compagnie, heures, durée, Classique/VIP, places restantes, prix), filtres (compagnie, prix, horaire, confort) et tri ; filtres en panneau coulissant sur mobile.
+3. Sièges : plan du bus en grille (libre, occupé, sélectionné), formulaire par passager (nom, prénom, pièce d'identité), récapitulatif collant.
+4. Paiement : récapitulatif, compte à rebours 15 min, choix MTN MoMo / Orange Money, téléphone, écran d'attente « Validez sur votre téléphone ».
+5. Billet : billet électronique avec QR code, référence, passager, siège, bouton Télécharger PDF.
+6. Mes réservations : onglets À venir / Passées, badges de statut, bouton Annuler avec montant remboursé.
+7. Connexion et inscription.
+8. Espace agent : tableau de bord (ventes, revenus, taux de remplissage), voyages, véhicules, scan de QR code avec résultat Valide (vert) / Déjà utilisé (rouge).
+9. Espace admin : statistiques avec graphiques, compagnies, gares et lignes, utilisateurs, paiements, journal d'audit.
+
+Barre de progression sur le parcours : Recherche › Sièges › Paiement › Billet. Tableaux du back-office en cartes sur mobile. Menu latéral sur desktop, menu tiroir sur mobile.

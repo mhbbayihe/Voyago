@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Résultats de recherche')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main class="container">
+  <div th:replace="~{fragments/layout :: steps(1)}"></div>
+
+  <div class="page-head">
+    <div>
+      <h1 th:text="${criteria.from() + ' → ' + criteria.to()}">Douala → Yaoundé</h1>
+      <p class="muted">
+        <span th:text="${#temporals.format(criteria.date(), 'EEEE d MMMM yyyy')}">date</span> ·
+        <span th:text="${criteria.passengers() + ' passager' + (criteria.passengers() > 1 ? 's' : '')}">1 passager</span> ·
+        <strong th:text="${#lists.size(results) + ' voyage' + (#lists.size(results) > 1 ? 's' : '') + ' disponible' + (#lists.size(results) > 1 ? 's' : '')}">n voyages</strong>
+      </p>
+    </div>
+    <a class="btn btn-outline btn-sm" th:href="@{/}">Modifier la recherche</a>
+  </div>
+
+  <nav class="day-strip" aria-label="Changer de jour">
+    <a th:each="d : ${days}" th:if="${!d.isBefore(today)}"
+       th:href="@{/search(from=${criteria.from()}, to=${criteria.to()}, date=${d}, passengers=${criteria.passengers()}, mode=${criteria.mode()}, sort=${criteria.sort()})}"
+       th:classappend="${d == criteria.date()} ? 'active'" th:attr="aria-current=${d == criteria.date()} ? 'date' : null"
+       th:text="${#temporals.format(d, 'EEE d MMM')}">jour</a>
+  </nav>
+
+  <div class="results-layout">
+    <aside>
+      <details class="card filters" data-open-desktop>
+        <summary>Filtres et tri <span class="chev" aria-hidden="true">▾</span></summary>
+        <form th:action="@{/search}" method="get" style="margin-top:12px">
+          <input type="hidden" name="from" th:value="${criteria.from()}">
+          <input type="hidden" name="to" th:value="${criteria.to()}">
+          <input type="hidden" name="date" th:value="${criteria.date()}">
+          <input type="hidden" name="passengers" th:value="${criteria.passengers()}">
+          <div class="field">
+            <label for="mode">Mode de transport</label>
+            <select class="input" id="mode" name="mode">
+              <option value="">Tous</option>
+              <option th:each="m : ${modes}" th:value="${m}" th:text="${m.label}" th:selected="${m == criteria.mode()}"></option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="companyId">Compagnie</label>
+            <select class="input" id="companyId" name="companyId">
+              <option value="">Toutes</option>
+              <option th:each="c : ${companies}" th:value="${c.id}" th:text="${c.name}" th:selected="${c.id == criteria.companyId()}"></option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="period">Horaire de départ</label>
+            <select class="input" id="period" name="period">
+              <option value="">Toute la journée</option>
+              <option value="MORNING" th:selected="${criteria.period() == 'MORNING'}">Matin (avant 12 h)</option>
+              <option value="AFTERNOON" th:selected="${criteria.period() == 'AFTERNOON'}">Après-midi (12 h - 18 h)</option>
+              <option value="EVENING" th:selected="${criteria.period() == 'EVENING'}">Soir (après 18 h)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="serviceClass">Confort</label>
+            <select class="input" id="serviceClass" name="serviceClass">
+              <option value="">Tous</option>
+              <option value="STANDARD" th:selected="${criteria.serviceClass() != null and criteria.serviceClass().name() == 'STANDARD'}">Standard (Classique, 2e classe, Économique)</option>
+              <option value="PREMIUM" th:selected="${criteria.serviceClass() != null and criteria.serviceClass().name() == 'PREMIUM'}">Premium (VIP, 1re classe, Affaires)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="maxPrice">Prix maximum (FCFA)</label>
+            <input class="input" type="number" inputmode="numeric" min="0" step="500" id="maxPrice" name="maxPrice" th:value="${criteria.maxPrice()}">
+          </div>
+          <div class="field">
+            <label for="sort">Trier par</label>
+            <select class="input" id="sort" name="sort">
+              <option value="DEPARTURE" th:selected="${criteria.sort() == 'DEPARTURE'}">Heure de départ</option>
+              <option value="PRICE" th:selected="${criteria.sort() == 'PRICE'}">Prix croissant</option>
+              <option value="DURATION" th:selected="${criteria.sort() == 'DURATION'}">Durée</option>
+            </select>
+          </div>
+          <button class="btn btn-blue" type="submit">Appliquer les filtres</button>
+        </form>
+      </details>
+    </aside>
+
+    <section aria-label="Voyages disponibles">
+      <div class="card empty" th:if="${#lists.isEmpty(results)}">
+        <div class="big"><svg th:replace="~{fragments/layout :: icon('search')}"></svg></div>
+        <h2>Aucun voyage disponible</h2>
+        <p>Essayez une autre date, un autre mode de transport ou retirez des filtres.</p>
+      </div>
+
+      <article class="trip-card" th:each="t : ${results}">
+        <div>
+          <div class="row" style="margin-bottom:10px">
+            <span class="badge mode"><svg th:replace="~{fragments/layout :: icon(${t.mode().icon})}"></svg> <th:block th:text="${t.mode().label}">Bus</th:block></span>
+            <strong th:text="${t.companyName()}">Compagnie</strong>
+            <span class="badge" th:classappend="${t.serviceClass().name() == 'PREMIUM'} ? 'premium' : 'muted'" th:text="${t.serviceClassLabel()}">Classique</span>
+          </div>
+          <div class="timeline">
+            <div>
+              <div class="time" th:text="${#temporals.format(t.departureAt(), 'HH:mm')}">06:00</div>
+              <div class="place" th:text="${t.fromStation()}">Gare</div>
+            </div>
+            <div class="line" aria-hidden="true"><span th:text="${t.durationLabel()}">4 h</span></div>
+            <div style="text-align:right">
+              <div class="time" th:text="${#temporals.format(t.arrivalAt(), 'HH:mm')}">10:00</div>
+              <div class="place" th:text="${t.toStation()}">Gare</div>
+            </div>
+          </div>
+          <div class="trip-meta">
+            <span class="small muted" th:text="${t.vehicleModel()}">Véhicule</span>
+            <span class="seats-left" th:classappend="${t.availableSeats() <= 5} ? 'low'"
+                  th:text="${t.availableSeats() + ' place' + (t.availableSeats() > 1 ? 's' : '') + ' restante' + (t.availableSeats() > 1 ? 's' : '')}">places</span>
+          </div>
+        </div>
+        <div class="trip-price">
+          <div class="amount" th:text="${@fmt.money(t.price())}">4 000 FCFA</div>
+          <div class="small muted">par passager</div>
+          <a class="btn btn-primary" style="margin-top:8px" th:href="@{/trips/{id}/seats(id=${t.id()})}"
+             th:attr="aria-label=${'Choisir ce voyage de ' + #temporals.format(t.departureAt(), 'HH:mm') + ' avec ' + t.companyName()}">Choisir</a>
+        </div>
+      </article>
+    </section>
+  </div>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

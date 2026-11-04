@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Voyages')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main class="container">
+  <div class="bo">
+    <nav th:replace="~{fragments/layout :: agentNav('trips')}"></nav>
+    <section>
+      <div th:replace="~{fragments/layout :: flash}"></div>
+      <div class="page-head"><div><h1>Voyages</h1><p class="muted">Programmation des départs et suivi du remplissage.</p></div></div>
+
+      <form class="card" method="post" th:action="@{/agent/trips}">
+        <h2>Programmer un voyage</h2>
+        <div class="form-grid cols-3">
+          <div>
+            <label for="routeId">Ligne</label>
+            <select class="input" id="routeId" name="routeId" required>
+              <option th:each="r : ${routes}" th:value="${r.id}" th:text="${r.label + ' (' + r.distanceKm + ' km, ' + @fmt.duration(r.durationMinutes) + ')'}"></option>
+            </select>
+          </div>
+          <div>
+            <label for="vehicleId">Véhicule</label>
+            <select class="input" id="vehicleId" name="vehicleId" required>
+              <option th:each="v : ${vehicles}" th:value="${v.id}" th:text="${v.registration + ' · ' + v.serviceClassLabel + ' · ' + v.seatCount + ' places'}"></option>
+            </select>
+          </div>
+          <div><label for="departureAt">Date et heure de départ</label><input class="input" type="datetime-local" id="departureAt" name="departureAt" required></div>
+          <div><label for="price">Prix (FCFA)</label><input class="input" type="number" inputmode="numeric" min="500" step="500" id="price" name="price" required></div>
+          <div><label for="days">Répéter sur (jours)</label><input class="input" type="number" min="1" max="30" id="days" name="days" value="1"></div>
+          <div style="align-self:end"><button class="btn btn-primary" type="submit">Programmer</button></div>
+        </div>
+      </form>
+
+      <div class="card">
+        <h2 th:text="${'Voyages à venir (' + #lists.size(trips) + ')'}">Voyages</h2>
+        <div class="table-wrap">
+          <table class="table stack-mobile">
+            <thead><tr><th>Départ</th><th>Ligne</th><th>Classe</th><th>Remplissage</th><th>Prix</th><th></th></tr></thead>
+            <tbody>
+              <tr th:each="t : ${trips}">
+                <td data-label="Départ" th:text="${#temporals.format(t.departureAt(), 'EEE dd/MM HH:mm')}">date</td>
+                <td data-label="Ligne" th:text="${t.label()}">ligne</td>
+                <td data-label="Classe" th:text="${t.serviceClassLabel()}">classe</td>
+                <td data-label="Remplissage">
+                  <div class="row"><div class="progress" th:classappend="${t.occupancyPercent() > 80} ? 'high'"><i th:style="${'width:' + t.occupancyPercent() + '%'}"></i></div>
+                  <span class="small" th:text="${(t.seatCount() - t.availableSeats()) + '/' + t.seatCount()}">0/40</span></div>
+                </td>
+                <td data-label="Prix">
+                  <form method="post" th:action="@{/agent/trips/{id}/price(id=${t.id()})}" class="row" style="gap:6px;flex-wrap:nowrap">
+                    <label class="sr-only" th:for="${'p-' + t.id()}">Prix</label>
+                    <input class="input" style="min-height:36px;width:110px" type="number" step="500" min="500" name="price" th:id="${'p-' + t.id()}" th:value="${t.price()}">
+                    <button class="btn btn-ghost btn-sm" type="submit" title="Modifier le tarif" aria-label="Enregistrer le tarif"><svg th:replace="~{fragments/layout :: icon('check')}"></svg></button>
+                  </form>
+                </td>
+                <td data-label="Actions" class="nowrap">
+                  <a class="btn btn-outline btn-sm" th:href="@{/agent/trips/{id}/manifest(id=${t.id()})}">Passagers</a>
+                  <a class="btn btn-primary btn-sm" th:href="@{/agent/counter/{id}(id=${t.id()})}">Vendre</a>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

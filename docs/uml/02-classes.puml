@@ -1,0 +1,222 @@
+@startuml classes
+' VoyaGo - Diagramme de classes du domaine · v1.0 · Groupe 15 · 2026-11-04
+title VoyaGo - Modèle du domaine (par module)
+skinparam classAttributeIconSize 0
+hide empty methods
+
+package "auth" {
+  enum Role {
+    CLIENT
+    AGENT
+    ADMIN
+  }
+  class User {
+    id : UUID
+    fullName : String
+    email : String {unique}
+    phone : String
+    passwordHash : String
+    companyId : UUID
+    active : boolean
+  }
+  User --> Role
+}
+
+package "trip" {
+  enum TransportMode {
+    BUS
+    TRAIN
+    PLANE
+  }
+  enum ServiceClass {
+    STANDARD
+    PREMIUM
+    +labelFor(mode) : String
+  }
+  class Company {
+    id : UUID
+    name : String {unique}
+    mode : TransportMode
+    active : boolean
+  }
+  class Station {
+    id : UUID
+    name : String
+    city : String
+    mode : TransportMode
+  }
+  class Route {
+    id : UUID
+    distanceKm : int
+    durationMinutes : int
+    +getLabel() : String
+  }
+  class Vehicle {
+    id : UUID
+    registration : String {unique}
+    model : String
+    seatCount : int
+    seatsPerRow : int
+  }
+  class Trip {
+    id : UUID
+    departureAt : LocalDateTime
+    arrivalAt : LocalDateTime
+    price : long (XAF)
+    status : TripStatus
+    version : long
+    +isBookable(now) : boolean
+    +changePrice(p : long)
+  }
+  interface SeatOccupancyPort <<port>> {
+    +occupiedSeats(tripId) : Set<Integer>
+    +occupiedCount(tripIds) : Map<UUID, Long>
+  }
+  Route "*" --> "1" Station : départ
+  Route "*" --> "1" Station : arrivée
+  Vehicle "*" --> "1" Company
+  Trip "*" --> "1" Route
+  Trip "*" --> "1" Vehicle
+  Vehicle --> ServiceClass
+  Company --> TransportMode
+}
+
+package "booking" {
+  enum BookingStatus <<State>> {
+    PENDING_PAYMENT
+    CONFIRMED
+    EXPIRED
+    CANCELLED
+    +next() : Set<BookingStatus>
+    +canTransitionTo(s) : boolean
+  }
+  class Booking <<agrégat>> {
+    id : UUID
+    reference : String {unique}
+    customerId : UUID
+    tripId : UUID
+    companyId : UUID
+    tripLabel : String
+    departureAt : LocalDateTime
+    unitPrice : long
+    totalAmount : long
+    expiresAt : LocalDateTime
+    refundAmount : long
+    version : long
+    +confirm(now)
+    +expire()
+    +cancel(refund, now)
+    +isPayable(now) : boolean
+  }
+  class Passenger {
+    firstName : String
+    lastName : String
+    idNumber : String
+    seatNumber : int
+  }
+  class SeatReservation {
+    tripId : UUID
+    seatNumber : int
+    bookingId : UUID
+    .. unique (trip_id, seat_number) : RG1 ..
+  }
+  class Ticket {
+    code : String {unique}
+    signature : String (HMAC)
+    seatNumber : int
+    status : TicketStatus
+    usedAt : LocalDateTime
+    +markUsed(now)
+  }
+  class RefundPolicy {
+    +quote(amount, departure, now) : RefundQuote
+  }
+  class SeatOccupancyAdapter <<adapter>>
+  Booking "1" *-- "1..6" Passenger : RG3
+  Booking --> BookingStatus
+  Booking "1" -- "1..6" SeatReservation
+  Booking "1" -- "0..6" Ticket
+  SeatOccupancyAdapter ..|> SeatOccupancyPort
+}
+
+package "payment" {
+  enum PaymentStatus {
+    PENDING
+    SUCCEEDED
+    FAILED
+    CANCELLED
+    PARTIALLY_REFUNDED
+    REFUNDED
+  }
+  enum PaymentMethod {
+    MTN_MOMO
+    ORANGE_MONEY
+    CASH
+  }
+  class Payment {
+    id : UUID
+    bookingId : UUID
+    amount : long
+    payerPhone : String
+    externalReference : String {unique}
+    idempotencyKey : String {unique}
+    +succeed()
+    +fail(reason)
+    +refund(amount)
+  }
+  class Refund {
+    amount : long
+    externalReference : String
+    reason : String
+  }
+  interface PaymentProvider <<Strategy>> {
+    +method() : PaymentMethod
+    +initiate(phone, amount, ref) : ProviderResult
+    +refund(extRef, amount) : ProviderResult
+  }
+  class MtnMomoProvider
+  class OrangeMoneyProvider
+  class CashProvider
+  Payment --> PaymentStatus
+  Payment --> PaymentMethod
+  Payment "1" -- "0..*" Refund
+  MtnMomoProvider ..|> PaymentProvider
+  OrangeMoneyProvider ..|> PaymentProvider
+  CashProvider ..|> PaymentProvider
+}
+
+package "notification" {
+  class Notification {
+    channel : Channel
+    recipient : String
+    subject : String
+    body : String
+    status : Status
+    attachmentName : String
+  }
+  interface NotificationSender {
+    +send(n, attachment)
+  }
+  class NotificationFactory <<Factory>>
+  class EmailSender
+  class SmsSender
+  EmailSender ..|> NotificationSender
+  SmsSender ..|> NotificationSender
+  NotificationFactory --> NotificationSender
+}
+
+package "shared" {
+  class AuditLog {
+    actor : String
+    action : String
+    details : String
+    createdAt : LocalDateTime
+  }
+}
+
+Booking ..> Trip : tripId (instantané)
+Payment ..> Booking : bookingId
+Booking ..> User : customerId
+note bottom of SeatReservation : Équivalent persistant du verrou Redis\n« SET siege NX EX 900 » du cahier des charges
+note bottom of RefundPolicy : RG5 : 80 % / 50 % / 0 %
+@enduml

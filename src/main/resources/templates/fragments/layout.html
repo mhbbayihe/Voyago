@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head th:fragment="head(title)">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1e3a8a">
+  <meta name="description" content="VoyaGo : réservez vos billets de bus, de train et d'avion au Cameroun et payez par Mobile Money.">
+  <title th:text="${title} + ' · VoyaGo'">VoyaGo</title>
+  <link rel="icon" th:href="@{/img/favicon.svg}" type="image/svg+xml">
+  <link id="theme-css" rel="stylesheet" th:href="@{/css/app.css}" th:attr="data-original=@{/css/app-original.css}">
+  <script>
+    /* Comparaison des designs : ajouter ?design=original ou ?design=nouveau à l'adresse (choix mémorisé). */
+    try {
+      var d = new URLSearchParams(location.search).get("design");
+      if (d) { localStorage.setItem("voyago-design", d); }
+      if (localStorage.getItem("voyago-design") === "original") {
+        var l = document.getElementById("theme-css"); l.href = l.getAttribute("data-original");
+      }
+    } catch (e) { }
+  </script>
+  <script th:src="@{/js/app.js}" defer></script>
+</head>
+
+<body>
+
+<!-- Icône Lucide : <svg th:replace="~{fragments/layout :: icon('bus')}"></svg> -->
+<svg th:fragment="icon(name)" class="icon" aria-hidden="true" focusable="false"><use th:href="@{/img/icons.svg} + '#' + ${name}"></use></svg>
+
+<header th:fragment="header" class="site-header">
+  <div class="container">
+    <a class="brand" th:href="@{/}" aria-label="VoyaGo, accueil">
+      <img class="brand-logo" th:src="@{/img/logo.svg}" alt="" width="36" height="36"><span>Voya<span class="brand-go">Go</span></span>
+    </a>
+    <button class="nav-toggle" type="button" data-nav-toggle aria-controls="main-nav" aria-expanded="false">
+      <svg th:replace="~{fragments/layout :: icon('menu')}"></svg> Menu
+    </button>
+    <nav id="main-nav" class="nav" aria-label="Navigation principale">
+      <a th:href="@{/}"><svg th:replace="~{fragments/layout :: icon('search')}"></svg> Rechercher</a>
+      <th:block sec:authorize="hasRole('CLIENT')">
+        <a th:href="@{/account/bookings}"><svg th:replace="~{fragments/layout :: icon('ticket')}"></svg> Mes réservations</a>
+        <a th:href="@{/account/inbox}"><svg th:replace="~{fragments/layout :: icon('mail')}"></svg> Messages</a>
+      </th:block>
+      <a sec:authorize="hasRole('AGENT')" th:href="@{/agent}"><svg th:replace="~{fragments/layout :: icon('layout-dashboard')}"></svg> Espace agent</a>
+      <a sec:authorize="hasRole('ADMIN')" th:href="@{/admin}"><svg th:replace="~{fragments/layout :: icon('shield-check')}"></svg> Administration</a>
+      <th:block sec:authorize="isAuthenticated()">
+        <a th:href="@{/account/profile}"><svg th:replace="~{fragments/layout :: icon('user')}"></svg> <span th:text="${me != null ? me.fullName : 'Profil'}">Profil</span></a>
+        <form th:action="@{/logout}" method="post"><button class="linklike" type="submit"><svg th:replace="~{fragments/layout :: icon('log-out')}"></svg> Déconnexion</button></form>
+      </th:block>
+      <th:block sec:authorize="!isAuthenticated()">
+        <a th:href="@{/login}"><svg th:replace="~{fragments/layout :: icon('log-in')}"></svg> Connexion</a>
+        <a class="cta" th:href="@{/register}">Créer un compte</a>
+      </th:block>
+    </nav>
+  </div>
+</header>
+
+<div th:fragment="flash">
+  <div class="alert success" role="status" th:if="${success}"><svg th:replace="~{fragments/layout :: icon('circle-check')}"></svg><span th:text="${success}"></span></div>
+  <div class="alert error" role="alert" th:if="${error}"><svg th:replace="~{fragments/layout :: icon('triangle-alert')}"></svg><span th:text="${error}"></span></div>
+</div>
+
+<ol th:fragment="steps(current)" class="steps" aria-label="Étapes de la réservation">
+  <li th:classappend="${current == 1} ? 'current' : 'done'">Recherche</li>
+  <li th:classappend="${current == 2} ? 'current' : (${current > 2} ? 'done' : '')">Sièges et passagers</li>
+  <li th:classappend="${current == 3} ? 'current' : (${current > 3} ? 'done' : '')">Paiement</li>
+  <li th:classappend="${current == 4} ? 'current done' : ''">Billet</li>
+</ol>
+
+<nav th:fragment="agentNav(active)" class="bo-nav" aria-label="Espace agent">
+  <span class="title" th:text="${company != null ? company.name : 'Agent'}">Compagnie</span>
+  <a th:href="@{/agent}" th:classappend="${active == 'dashboard'} ? 'active'"><svg th:replace="~{fragments/layout :: icon('layout-dashboard')}"></svg> Tableau de bord</a>
+  <a th:href="@{/agent/trips}" th:classappend="${active == 'trips'} ? 'active'"><svg th:replace="~{fragments/layout :: icon('calendar-days')}"></svg> Voyages</a>
+  <a th:href="@{/agent/vehicles}" th:classappend="${active == 'vehicles'} ? 'active'"><svg th:replace="~{fragments/layout :: icon(${company != null ? company.mode.icon : 'bus'})}"></svg> Véhicules</a>
+  <a th:href="@{/agent/scan}" th:classappend="${active == 'scan'} ? 'active'"><svg th:replace="~{fragments/layout :: icon('scan-line')}"></svg> Contrôle des billets</a>
+  <a th:href="@{/agent/sales}" th:classappend="${active == 'sales'} ? 'active'"><svg th:replace="~{fragments/layout :: icon('receipt')}"></svg> Ventes</a>
+</nav>
+
+<nav th:fragment="adminNav(active)" class="bo-nav" aria-label="Administration">
+  <span class="title">Administration</span>
+  <a th:href="@{/admin}" th:classappend="${active == 'dashboard'} ? 'active'"><svg th:replace="~{fragments/layout :: icon('layout-dashboard')}"></svg> Tableau de bord</a>
+  <a th:href="@{/admin/companies}" th:classappend="${active == 'companies'} ? 'active'"><svg th:replace="~{fragments/layout :: icon('building-2')}"></svg> Compagnies</a>
+  <a th:href="@{/admin/network}" th:classappend="${active == 'network'} ? 'active'"><svg th:replace="~{fragments/layout :: icon('map')}"></svg> Gares et lignes</a>
+  <a th:href="@{/admin/users}" th:classappend="${active == 'users'} ? 'active'"><svg th:replace="~{fragments/layout :: icon('users')}"></svg> Utilisateurs</a>
+  <a th:href="@{/admin/bookings}" th:classappend="${active == 'bookings'} ? 'active'"><svg th:replace="~{fragments/layout :: icon('ticket')}"></svg> Réservations</a>
+  <a th:href="@{/admin/payments}" th:classappend="${active == 'payments'} ? 'active'"><svg th:replace="~{fragments/layout :: icon('credit-card')}"></svg> Paiements</a>
+  <a th:href="@{/admin/notifications}" th:classappend="${active == 'notifications'} ? 'active'"><svg th:replace="~{fragments/layout :: icon('mail')}"></svg> Notifications</a>
+  <a th:href="@{/admin/audit}" th:classappend="${active == 'audit'} ? 'active'"><svg th:replace="~{fragments/layout :: icon('file-text')}"></svg> Journal d'audit</a>
+  <a th:href="@{/swagger-ui.html}"><svg th:replace="~{fragments/layout :: icon('plug')}"></svg> API (Swagger)</a>
+</nav>
+
+<footer th:fragment="footer" class="site-footer">
+  <div class="container grid">
+    <div>
+      <p class="footer-brand"><img th:src="@{/img/logo.svg}" alt="" width="28" height="28"> <strong>VoyaGo</strong></p>
+      <p>Le guichet numérique unique pour vos voyages en bus, en train et en avion au Cameroun.
+        Paiement Mobile Money, billet électronique avec QR code.</p>
+    </div>
+    <div>
+      <strong>Plateforme</strong><br>
+      <a th:href="@{/about}">Architecture du projet</a><br>
+      <a th:href="@{/swagger-ui.html}">Documentation de l'API</a>
+    </div>
+    <div>
+      <strong>Projet académique</strong><br>
+      ENSP Douala · GIT Génie Logiciel<br>
+      Architecture logicielle et objets répartis · Groupe 15<br>
+      <span class="small">Photos : Unsplash · Icônes : Lucide</span>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,62 @@
+@startuml cas-utilisation
+' VoyaGo - Diagramme de cas d'utilisation global · v1.0 · Groupe 15 · 2026-11-04
+title VoyaGo - Cas d'utilisation
+left to right direction
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+
+actor "Visiteur" as V
+actor "Client" as C
+actor "Agent de compagnie" as A
+actor "Administrateur" as AD
+actor "Système de paiement\n(MTN MoMo / Orange Money)" as PAY <<système>>
+actor "Service de notification\n(SMTP / SMS)" as NOTIF <<système>>
+V <|-- C
+
+rectangle "Plateforme VoyaGo" {
+  usecase "UC01 S'inscrire / Se connecter" as UC01
+  usecase "Vérifier le compte" as UC01b
+  usecase "UC02 Rechercher un voyage\n(bus, train, avion)" as UC02
+  usecase "Filtrer / trier" as UC02b
+  usecase "UC03 Choisir ses sièges" as UC03
+  usecase "Verrouiller les sièges (15 min)" as UC03b
+  usecase "UC04 Réserver un voyage" as UC04
+  usecase "UC05 Payer une réservation" as UC05
+  usecase "UC06 Télécharger / recevoir le billet" as UC06
+  usecase "Générer le QR code signé" as UC06b
+  usecase "UC07 Annuler une réservation" as UC07
+  usecase "Rembourser (barème RG5)" as UC07b
+  usecase "UC08 Gérer voyages et véhicules" as UC08
+  usecase "UC09 Vendre au guichet" as UC09
+  usecase "UC10 Contrôler un billet (scan)" as UC10
+  usecase "Vérifier la signature du QR" as UC10b
+  usecase "UC11 Gérer compagnies, gares,\nlignes et comptes" as UC11
+  usecase "UC12 Consulter les statistiques" as UC12
+  usecase "Consulter le journal d'audit" as UC13
+}
+
+V --> UC01
+V --> UC02
+C --> UC04
+C --> UC06
+C --> UC07
+A --> UC08
+A --> UC09
+A --> UC10
+A --> UC12
+AD --> UC11
+AD --> UC12
+AD --> UC13
+
+UC01 ..> UC01b : <<include>>
+UC02b ..> UC02 : <<extend>>
+UC03 ..> UC03b : <<include>>
+UC04 ..> UC03 : <<include>>
+UC04 ..> UC05 : <<include>>
+UC06 ..> UC06b : <<include>>
+UC07b ..> UC07 : <<extend>>
+UC10 ..> UC10b : <<include>>
+UC09 --|> UC04
+UC05 --> PAY
+UC06 --> NOTIF
+@enduml

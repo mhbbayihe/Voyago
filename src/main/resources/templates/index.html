@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Réservez votre voyage')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+
+<section class="hero">
+  <div class="container">
+    <h1>Bus, train ou avion : réservez votre place en quelques clics.</h1>
+    <p>Comparez les horaires et les prix, choisissez votre siège, payez par MTN MoMo ou Orange Money et recevez votre billet avec QR code.</p>
+  </div>
+  <span class="photo-credit">Douala · photo <a href="https://unsplash.com/photos/77GLhCEDKt8" target="_blank" rel="noopener">Unsplash</a></span>
+</section>
+
+<main class="container" style="padding-top:0">
+  <div th:replace="~{fragments/layout :: flash}"></div>
+
+  <form class="card search-card" th:action="@{/search}" method="get" role="search" aria-label="Rechercher un voyage">
+    <div class="mode-tabs" role="radiogroup" aria-label="Mode de transport">
+      <label class="mode-tab"><input type="radio" name="mode" value="" checked><span><svg th:replace="~{fragments/layout :: icon('route')}"></svg> Tous</span></label>
+      <label class="mode-tab" th:each="m : ${modes}"><input type="radio" name="mode" th:value="${m}"><span><svg th:replace="~{fragments/layout :: icon(${m.icon})}"></svg> <th:block th:text="${m.label}">Bus</th:block></span></label>
+    </div>
+    <div class="search-grid">
+      <div>
+        <label for="from">Départ</label>
+        <select class="input" id="from" name="from" required>
+          <option th:each="c : ${cities}" th:value="${c}" th:text="${c}" th:selected="${c == 'Douala'}"></option>
+        </select>
+      </div>
+      <button class="swap" type="button" data-swap aria-label="Inverser départ et arrivée"><svg th:replace="~{fragments/layout :: icon('arrow-left-right')}"></svg></button>
+      <div>
+        <label for="to">Arrivée</label>
+        <select class="input" id="to" name="to" required>
+          <option th:each="c : ${cities}" th:value="${c}" th:text="${c}" th:selected="${c == 'Yaoundé'}"></option>
+        </select>
+      </div>
+      <div>
+        <label for="date">Date</label>
+        <input class="input" type="date" id="date" name="date" th:value="${tomorrow}" th:min="${today}" required>
+      </div>
+      <div>
+        <label for="passengers">Passagers</label>
+        <select class="input" id="passengers" name="passengers">
+          <option th:each="n : ${#numbers.sequence(1, 6)}" th:value="${n}" th:text="${n}"></option>
+        </select>
+      </div>
+      <button class="btn btn-primary" type="submit"><svg th:replace="~{fragments/layout :: icon('search')}"></svg> Rechercher</button>
+    </div>
+  </form>
+
+  <section class="section">
+    <h2>Trois façons de voyager</h2>
+    <div class="grid-3">
+      <a class="mode-card" th:href="@{/search(from='Douala', to='Yaoundé', date=${tomorrow}, mode='BUS')}">
+        <img th:src="@{/img/photos/bus.jpg}" alt="Autocar dans une rue" loading="lazy" width="900" height="900">
+        <div class="body"><strong><svg th:replace="~{fragments/layout :: icon('bus')}"></svg> En bus</strong><span>Les grandes lignes routières, en Classique ou VIP.</span></div>
+      </a>
+      <a class="mode-card" th:href="@{/search(from='Douala', to='Yaoundé', date=${tomorrow}, mode='TRAIN')}">
+        <img th:src="@{/img/photos/train.jpg}" alt="Train de voyageurs arrivant en gare" loading="lazy" width="900" height="596">
+        <div class="body"><strong><svg th:replace="~{fragments/layout :: icon('train-front')}"></svg> En train</strong><span>Douala, Yaoundé, Bélabo, Ngaoundéré : en 2e ou 1re classe.</span></div>
+      </a>
+      <a class="mode-card" th:href="@{/search(from='Douala', to='Garoua', date=${tomorrow}, mode='PLANE')}">
+        <img th:src="@{/img/photos/plane.jpg}" alt="Avion sur la piste au coucher du soleil" loading="lazy" width="900" height="405">
+        <div class="body"><strong><svg th:replace="~{fragments/layout :: icon('plane')}"></svg> En avion</strong><span>Rejoignez le Nord en moins de deux heures.</span></div>
+      </a>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Trajets populaires</h2>
+    <div class="grid-3">
+      <a class="route-card" th:each="p : ${popular}"
+         th:href="@{/search(from=${p.from}, to=${p.to}, date=${tomorrow}, mode=${p.mode})}">
+        <span class="route-icon"><svg th:replace="~{fragments/layout :: icon(${p.mode.icon})}"></svg></span>
+        <span>
+          <strong th:text="${p.from + ' → ' + p.to}">Douala → Yaoundé</strong>
+          <span class="muted small" th:text="${p.mode.label}">Bus</span>
+          <span class="small" th:if="${p.fromPrice != null}"> · dès <strong style="display:inline" th:text="${@fmt.money(p.fromPrice)}">4 000 FCFA</strong></span>
+        </span>
+      </a>
+    </div>
+  </section>
+
+  <section class="section grid-3">
+    <div class="card feature">
+      <span class="feature-icon"><svg th:replace="~{fragments/layout :: icon('armchair')}"></svg></span>
+      <div><h3>Votre siège, garanti</h3><p class="muted">Choisissez votre place sur le plan : elle vous est réservée 15 minutes, le temps de payer.</p></div>
+    </div>
+    <div class="card feature">
+      <span class="feature-icon"><svg th:replace="~{fragments/layout :: icon('smartphone')}"></svg></span>
+      <div><h3>Paiement Mobile Money</h3><p class="muted">MTN MoMo et Orange Money. Aucune donnée de compte n'est conservée.</p></div>
+    </div>
+    <div class="card feature">
+      <span class="feature-icon"><svg th:replace="~{fragments/layout :: icon('qr-code')}"></svg></span>
+      <div><h3>Billet électronique</h3><p class="muted">Billet PDF avec QR code signé, envoyé par e-mail et vérifié à l'embarquement.</p></div>
+    </div>
+  </section>
+</main>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Paiement')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main class="container">
+  <div th:replace="~{fragments/layout :: steps(3)}"></div>
+  <div th:replace="~{fragments/layout :: flash}"></div>
+
+  <div class="page-head">
+    <div>
+      <h1>Paiement</h1>
+      <p class="muted" th:text="${'Réservation ' + booking.reference}">Réservation</p>
+    </div>
+    <span class="countdown" role="timer" aria-live="off" th:attr="data-countdown=${secondsLeft}">
+      <svg th:replace="~{fragments/layout :: icon('clock')}"></svg> Sièges réservés encore <span data-countdown-label>15:00</span>
+    </span>
+  </div>
+
+  <div class="booking-layout">
+    <form class="card" method="post" th:action="@{/bookings/{id}/pay(id=${booking.id})}">
+      <input type="hidden" name="idempotencyKey" th:value="${idempotencyKey}">
+      <h2>Moyen de paiement</h2>
+      <fieldset style="border:0;padding:0;margin:0 0 16px">
+        <legend class="sr-only">Choisissez votre opérateur</legend>
+        <div class="pay-options">
+          <label class="pay-option"><input type="radio" name="method" value="MTN_MOMO" checked>
+            <span><span class="logo mtn">MTN</span>MTN Mobile Money</span></label>
+          <label class="pay-option"><input type="radio" name="method" value="ORANGE_MONEY">
+            <span><span class="logo orange">OM</span>Orange Money</span></label>
+        </div>
+      </fieldset>
+      <div class="field">
+        <label for="phone">Numéro Mobile Money</label>
+        <input class="input" type="tel" inputmode="numeric" id="phone" name="phone" placeholder="6XX XX XX XX"
+               th:value="${booking.customerPhone}" required autocomplete="tel">
+        <p class="small muted" style="margin:6px 0 0">Démo : MTN = numéros en 67…, 650-654, 680-684 · Orange = 69…, 655-659, 685-689.</p>
+      </div>
+      <div class="alert info small"><svg th:replace="~{fragments/layout :: icon('lock')}"></svg> Vous allez recevoir une demande de validation sur votre téléphone. VoyaGo ne conserve aucune donnée de votre compte Mobile Money.</div>
+      <button class="btn btn-primary btn-block" type="submit" data-disable-on-expire
+              th:text="${'Payer ' + @fmt.money(booking.totalAmount)}">Payer</button>
+    </form>
+
+    <aside class="card sticky">
+      <h2>Récapitulatif</h2>
+      <div class="summary-line"><span class="muted">Trajet</span><strong><svg th:replace="~{fragments/layout :: icon(${booking.mode.icon})}"></svg> <th:block th:text="${booking.tripLabel}">trajet</th:block></strong></div>
+      <div class="summary-line"><span class="muted">Départ</span><strong th:text="${#temporals.format(booking.departureAt, 'dd/MM/yyyy HH:mm')}">date</strong></div>
+      <div class="summary-line"><span class="muted">Compagnie</span><strong th:text="${booking.companyName}">compagnie</strong></div>
+      <div class="summary-line"><span class="muted">Classe</span><strong th:text="${booking.serviceClassLabel}">classe</strong></div>
+      <div class="summary-line" th:each="p : ${booking.passengers}">
+        <span class="muted" th:text="${'Siège ' + p.seatNumber}">Siège</span><strong th:text="${p.fullName}">nom</strong>
+      </div>
+      <div class="summary-line summary-total"><span>Total</span><span th:text="${@fmt.money(booking.totalAmount)}">total</span></div>
+    </aside>
+  </div>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

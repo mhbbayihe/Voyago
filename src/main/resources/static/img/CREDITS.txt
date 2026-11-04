@@ -1,0 +1,12 @@
+Crédits des ressources graphiques de VoyaGo
+============================================
+
+Icônes : Lucide v1.57.0 (https://lucide.dev), licence ISC. Fichier : img/icons.svg (sprite construit à partir de lucide-static).
+Lecteur QR : html5-qrcode 2.3.8, licence Apache 2.0. Fichier : js/html5-qrcode.min.js.
+Logo : créé pour le projet VoyaGo (Groupe 15), libre d'usage dans le cadre du projet.
+
+Photos (licence Unsplash : usage gratuit, commercial ou non, sans autorisation requise) :
+- img/photos/douala.jpg : Douala, Cameroun - https://unsplash.com/photos/77GLhCEDKt8
+- img/photos/bus.jpg    : bus à Pretoria, Afrique du Sud, par Sipho Ndebele - https://unsplash.com/photos/tUgJmmFwLPM
+- img/photos/train.jpg  : train de voyageurs - https://unsplash.com/photos/i95OeceNUeo
+- img/photos/plane.jpg  : avion au Cap, Afrique du Sud, par Delano Ramdas - https://unsplash.com/photos/3xRDCBeFnCU

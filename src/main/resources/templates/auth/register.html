@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Créer un compte')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main class="container">
+  <div class="auth-wrap">
+    <div class="alert error" role="alert" th:if="${error}" th:text="${error}"></div>
+    <div class="card">
+      <h1>Créer un compte</h1>
+      <p class="muted">Réservez plus vite et retrouvez tous vos billets.</p>
+      <form th:action="@{/register}" th:object="${form}" method="post" novalidate>
+        <div class="field">
+          <label for="fullName">Nom complet</label>
+          <input class="input" id="fullName" th:field="*{fullName}" autocomplete="name" required>
+          <div class="field-error" th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}"></div>
+        </div>
+        <div class="field">
+          <label for="email">E-mail</label>
+          <input class="input" type="email" id="email" th:field="*{email}" autocomplete="email" required>
+          <div class="field-error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
+        </div>
+        <div class="field">
+          <label for="phone">Téléphone (pour les SMS)</label>
+          <input class="input" type="tel" inputmode="tel" id="phone" th:field="*{phone}" placeholder="6XX XX XX XX" autocomplete="tel">
+        </div>
+        <div class="field">
+          <label for="password">Mot de passe (8 caractères minimum)</label>
+          <input class="input" type="password" id="password" th:field="*{password}" autocomplete="new-password" required minlength="8">
+          <div class="field-error" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
+        </div>
+        <div class="field">
+          <label class="checkbox"><input type="checkbox" th:field="*{consent}">
+            <span>J'accepte que mes données soient utilisées uniquement pour gérer mes réservations (politique de confidentialité).</span></label>
+          <div class="field-error" th:if="${#fields.hasErrors('consent')}" th:errors="*{consent}"></div>
+        </div>
+        <button class="btn btn-primary btn-block" type="submit">Créer mon compte</button>
+      </form>
+      <p class="small muted" style="margin-top:14px">Déjà inscrit ? <a th:href="@{/login}">Se connecter</a></p>
+    </div>
+  </div>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

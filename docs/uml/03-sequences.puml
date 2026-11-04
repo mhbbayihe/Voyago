@@ -1,0 +1,179 @@
+' VoyaGo - Diagrammes de séquence (7 scénarios) · v1.0 · Groupe 15 · 2026-11-04
+
+@startuml seq-1-authentification
+title S1 - Authentification (API REST, JWT)
+actor Client
+participant "AuthApiController" as API
+participant "AuthenticationManager" as AM
+participant "AppUserDetailsService" as UDS
+database "app_user" as DB
+participant "JwtService" as JWT
+Client -> API : POST /api/v1/auth/login {email, password}
+API -> AM : authenticate(email, password)
+AM -> UDS : loadUserByUsername(email)
+UDS -> DB : SELECT ... WHERE email = ?
+DB --> UDS : User
+UDS --> AM : AppUserPrincipal
+AM -> AM : BCrypt.matches()
+alt identifiants valides
+  AM --> API : Authentication
+  API -> JWT : generate(principal) (15 min)
+  JWT --> API : jwt signé HS256
+  API --> Client : 200 {accessToken, expiresIn, role}
+else identifiants invalides
+  AM --> API : BadCredentialsException
+  API --> Client : 401 problem+json
+end
+@enduml
+
+@startuml seq-2-recherche
+title S2 - Recherche de voyages (F06, F07, RG8)
+actor Visiteur
+participant "HomeController\n/ TripApiController" as C
+participant "TripService" as TS
+database "trip, route, vehicle" as DB
+participant "SeatOccupancyPort\n(adaptateur booking)" as PORT
+Visiteur -> C : GET /search?from&to&date&mode&filtres
+C -> TS : search(criteria)
+TS -> DB : voyages du jour (ville départ/arrivée, statut SCHEDULED)
+DB --> TS : List<Trip>
+TS -> TS : filtre isBookable(now) (RG8)
+TS -> PORT : occupiedCount(tripIds)
+PORT --> TS : Map<tripId, nb occupés>
+TS -> TS : filtres (mode, compagnie, prix, horaire, confort)\nexclusion des voyages complets, tri
+TS --> C : List<TripView>
+C --> Visiteur : 200 résultats
+@enduml
+
+@startuml seq-3-verrou-sieges
+title S3 - Choix et verrouillage des sièges (F08, F09, RG1, RG2)
+actor Client
+participant "BookingWebController" as W
+participant "BookingService" as BS
+participant "TripService" as TS
+database "booking, seat_reservation" as DB
+Client -> W : POST /trips/{id}/book (sièges + passagers)
+W -> BS : create(customer, tripId, passagers)
+BS -> BS : 1 à 6 passagers, sièges distincts,\nnom/prénom/pièce obligatoires (RG3)
+BS -> TS : requireBookable(tripId)
+TS --> BS : TripView (instantané)
+BS -> DB : expirer les réservations non payées échues de ce voyage
+BS -> DB : SELECT seat_reservation WHERE trip AND seat IN (...)
+alt siège déjà pris
+  BS --> W : SeatUnavailableException
+  W --> Client : 302 /seats + message « siège déjà pris »
+else sièges libres
+  BS -> DB : INSERT booking (PENDING_PAYMENT, expiresAt = now + 15 min)
+  BS -> DB : INSERT seat_reservation (unique trip_id, seat_number) + flush
+  alt deux clients au même instant
+    DB --> BS : violation de contrainte d'unicité
+    BS --> W : SeatUnavailableException (RG1)
+  else
+    DB --> BS : OK
+    BS --> W : Booking
+    W --> Client : 302 /bookings/{id}/pay (compte à rebours 15 min)
+  end
+end
+@enduml
+
+@startuml seq-4-paiement
+title S4 - Réservation et paiement Mobile Money (F12, F13, RG4) - saga
+actor Client
+participant "PaymentService" as PS
+participant "PaymentProvider\n(Strategy : MTN / Orange)" as PP
+participant "Opérateur\nMobile Money" as OP
+participant "PaymentApiController\n(webhook)" as WH
+participant "BookingService" as BS
+Client -> PS : initiate(bookingId, MTN_MOMO, phone, Idempotency-Key)
+PS -> PS : clé déjà connue ? → renvoyer le même paiement (RG4)
+PS -> BS : requirePayable(bookingId) (délai de 15 min non dépassé)
+PS -> PP : initiate(phone, montant de la réservation, référence)
+PP -> OP : demande de paiement (USSD / push)
+PP --> PS : PENDING + référence externe
+PS --> Client : « Validez sur votre téléphone »
+Client -> OP : saisit son code secret
+OP -> WH : POST /api/v1/payments/webhook/mtn\nX-VoyaGo-Signature: HMAC
+WH -> WH : vérifier la signature HMAC-SHA256
+alt signature invalide
+  WH --> OP : 401
+else
+  WH -> PS : handleProviderResult(extRef, SUCCESSFUL)
+  PS -> PS : paiement déjà traité ? → ignorer (idempotent)
+  PS -> PS : SUCCEEDED, audit
+  PS -> BS : <<event>> PaymentConfirmed
+  BS -> BS : booking.confirm(), émission des billets signés
+  BS -> BS : <<event>> BookingConfirmed
+  WH --> OP : 200
+end
+@enduml
+
+@startuml seq-5-billet-notification
+title S5 - Émission du billet et notification (F14, F16)
+participant "BookingService" as BS
+participant "NotificationService" as NS
+participant "TicketService" as TS
+participant "TicketPdfRenderer\n(OpenPDF)" as PDF
+participant "QrCodeGenerator\n(ZXing)" as QR
+participant "NotificationFactory" as F
+participant "EmailSender" as ES
+BS -> NS : <<event>> BookingConfirmed (après COMMIT)
+NS -> TS : pdf(tickets)
+loop pour chaque billet
+  TS -> QR : png("VOYAGO|code|signature HMAC")
+  QR --> TS : image
+end
+TS -> PDF : render(tickets, qr)
+PDF --> TS : billet.pdf
+TS --> NS : octets PDF
+NS -> F : email(client, objet, corps)
+F --> NS : Notification
+NS -> F : senderFor(EMAIL)
+F --> NS : EmailSender
+NS -> ES : send(notification, pdf)
+ES --> NS : SENT (SMTP) ou SIMULATED (démo)
+NS -> NS : enregistrer la notification (+ SMS)
+@enduml
+
+@startuml seq-6-annulation
+title S6 - Annulation et remboursement (F10, RG5) - compensation de la saga
+actor Client
+participant "BookingService" as BS
+participant "RefundPolicy" as RP
+participant "PaymentService" as PS
+participant "PaymentProvider" as PP
+Client -> BS : cancel(bookingId)
+BS -> BS : propriétaire ? voyage pas encore parti ?\naucun billet utilisé ?
+alt réservation confirmée (payée)
+  BS -> RP : quote(total, départ, maintenant)
+  RP --> BS : 80 % (> 24 h) | 50 % (24 h - 2 h) | 0 % (< 2 h)
+end
+BS -> BS : booking.cancel(remboursement), billets CANCELLED
+BS -> BS : DELETE seat_reservation (sièges libérés)
+BS -> BS : audit ANNULATION_RESERVATION
+BS -> PS : <<event>> BookingCancelled(wasPaid, refundAmount)
+opt remboursement > 0
+  PS -> PP : refund(extRef, montant)
+  PP --> PS : référence de remboursement
+  PS -> PS : Refund + statut (PARTIALLY_)REFUNDED, audit
+end
+BS --> Client : réservation annulée + montant remboursé
+@enduml
+
+@startuml seq-7-expiration
+title S7 - Expiration d'une réservation non payée (RG2)
+participant "BookingScheduler\n(@Scheduled toutes les 30 s)" as SCH
+participant "BookingService" as BS
+database "booking, seat_reservation" as DB
+participant "PaymentService" as PS
+participant "NotificationService" as NS
+SCH -> BS : expireOverdue()
+BS -> DB : SELECT booking WHERE status = PENDING_PAYMENT AND expiresAt < now
+loop pour chaque réservation échue
+  BS -> BS : booking.expire() (State : PENDING → EXPIRED)
+  BS -> DB : DELETE seat_reservation (sièges libérés)
+  BS -> PS : <<event>> BookingExpired
+  PS -> PS : paiements PENDING → CANCELLED
+  BS -> NS : <<event>> BookingExpired → e-mail au client
+end
+note over PS : Si un paiement arrive malgré tout après l'expiration :\nLatePaymentRefundRequested → remboursement intégral.
+@enduml

@@ -1,0 +1,32 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:voyago-test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    open-in-view: false
+  mail:
+    host: localhost
+    port: 1025
+
+voyago:
+  booking:
+    seat-lock-minutes: 15
+    max-passengers: 6
+    expiration-check-ms: 3600000
+  refund:
+    full-window-hours: 24
+    full-window-percent: 80
+    partial-window-hours: 2
+    partial-window-percent: 50
+  security:
+    jwt-secret: dm95YWdvLXRlc3Qtc2VjcmV0LWZvci11bml0LXRlc3RzLW9ubHktMjAyNi14eHg=
+    jwt-validity-minutes: 15
+    qr-secret: test-qr-secret
+    webhook-secret: test-webhook-secret
+  mail:
+    enabled: false
+    from: test@voyago.cm
+  seed-demo-data: false

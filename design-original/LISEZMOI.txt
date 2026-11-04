@@ -1,0 +1,7 @@
+Sauvegarde du design original de VoyaGo (version 1, 2026-11-04).
+
+Pour revenir à ce design :
+  copier design-original/static/css/app.css  vers  src/main/resources/static/css/app.css
+  (les gabarits HTML n'ont pas besoin d'être restaurés : ils restent compatibles)
+
+Le fichier est aussi disponible dans l'application : src/main/resources/static/css/app-original.css

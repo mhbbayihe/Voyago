@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Validation du paiement')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main class="container">
+  <div th:replace="~{fragments/layout :: steps(3)}"></div>
+
+  <div class="grid-2" style="align-items:center">
+    <div>
+      <h1>Validez sur votre téléphone</h1>
+      <p class="muted">Une demande de paiement de <strong th:text="${@fmt.money(payment.amount)}">montant</strong> a été envoyée au
+        <strong th:text="${payment.payerPhone}">numéro</strong> (<span th:text="${payment.method.label}">opérateur</span>).
+        Composez votre code secret pour confirmer.</p>
+      <div class="summary-line"><span class="muted">Réservation</span><strong th:text="${booking.reference}">ref</strong></div>
+      <div class="summary-line"><span class="muted">Transaction</span><strong class="mono" th:text="${payment.externalReference}">ext</strong></div>
+      <p style="margin-top:16px"><a class="btn btn-outline btn-sm" th:href="@{/payments/{id}(id=${payment.id})}">Actualiser le statut</a></p>
+    </div>
+
+    <div class="phone-mock" aria-label="Simulateur de téléphone (démonstration)">
+      <div class="phone-screen">
+        <div class="spinner" aria-hidden="true"></div>
+        <strong th:text="${payment.method.label}">Opérateur</strong>
+        <p class="small" style="margin:8px 0 16px">
+          Paiement de <strong th:text="${@fmt.money(payment.amount)}">montant</strong> à VoyaGo.<br>Confirmez-vous ?</p>
+        <p class="small muted">Simulateur de l'opérateur (sandbox)</p>
+        <form method="post" th:action="@{/payments/{id}/simulate(id=${payment.id})}" class="stack">
+          <button class="btn btn-success btn-block" type="submit" name="outcome" value="approve"><svg th:replace="~{fragments/layout :: icon('check')}"></svg> Valider le paiement</button>
+          <button class="btn btn-danger btn-block" type="submit" name="outcome" value="refuse"><svg th:replace="~{fragments/layout :: icon('x')}"></svg> Refuser</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

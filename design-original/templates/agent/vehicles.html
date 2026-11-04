@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Véhicules')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main class="container">
+  <div class="bo">
+    <nav th:replace="~{fragments/layout :: agentNav('vehicles')}"></nav>
+    <section>
+      <div th:replace="~{fragments/layout :: flash}"></div>
+      <div class="page-head"><div><h1>Véhicules</h1><p class="muted" th:text="${'Flotte de ' + company.name + ' (' + company.mode.label + ')'}">flotte</p></div></div>
+
+      <form class="card" method="post" th:action="@{/agent/vehicles}">
+        <h2>Ajouter un véhicule</h2>
+        <div class="form-grid cols-3">
+          <div><label for="registration">Immatriculation / n° de rame</label><input class="input" id="registration" name="registration" required></div>
+          <div><label for="model">Modèle</label><input class="input" id="model" name="model" required></div>
+          <div>
+            <label for="serviceClass">Classe</label>
+            <select class="input" id="serviceClass" name="serviceClass">
+              <option th:each="c : ${classes}" th:value="${c}" th:text="${c.labelFor(company.mode)}"></option>
+            </select>
+          </div>
+          <div><label for="seatCount">Nombre de sièges</label><input class="input" type="number" min="1" max="300" id="seatCount" name="seatCount" value="40" required></div>
+          <div>
+            <label for="seatsPerRow">Sièges par rangée</label>
+            <select class="input" id="seatsPerRow" name="seatsPerRow">
+              <option value="3">3 (2 + 1, VIP)</option>
+              <option value="4" selected>4 (2 + 2)</option>
+              <option value="5">5 (3 + 2)</option>
+              <option value="6">6 (3 + 3, avion)</option>
+            </select>
+          </div>
+          <div style="align-self:end"><button class="btn btn-primary btn-block" type="submit">Ajouter</button></div>
+        </div>
+      </form>
+
+      <div class="card">
+        <h2>Flotte</h2>
+        <div class="table-wrap">
+          <table class="table stack-mobile">
+            <thead><tr><th>Immatriculation</th><th>Modèle</th><th>Classe</th><th>Sièges</th></tr></thead>
+            <tbody>
+              <tr th:each="v : ${vehicles}">
+                <td data-label="Immatriculation" class="mono" th:text="${v.registration}">plaque</td>
+                <td data-label="Modèle" th:text="${v.model}">modèle</td>
+                <td data-label="Classe"><span class="badge" th:classappend="${v.serviceClass.name() == 'PREMIUM'} ? 'premium' : 'muted'" th:text="${v.serviceClassLabel}">classe</span></td>
+                <td data-label="Sièges" th:text="${v.seatCount + ' (' + v.seatsPerRow + ' par rangée)'}">40</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

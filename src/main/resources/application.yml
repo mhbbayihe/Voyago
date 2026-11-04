@@ -1,0 +1,59 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: voyago
+  datasource:
+    url: jdbc:h2:file:./data/voyago;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;AUTO_SERVER=TRUE
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate.format_sql: false
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  thymeleaf:
+    cache: false
+  mail:
+    host: localhost
+    port: 1025
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
+voyago:
+  booking:
+    seat-lock-minutes: 15
+    max-passengers: 6
+    expiration-check-ms: 30000
+  refund:
+    # RG5 : barème d'annulation (paramétrable)
+    full-window-hours: 24
+    full-window-percent: 80
+    partial-window-hours: 2
+    partial-window-percent: 50
+  security:
+    jwt-secret: ${VOYAGO_JWT_SECRET:dm95YWdvLWRlbW8tc2VjcmV0LWNoYW5nZS1tZS1pbi1wcm9kdWN0aW9uLTIwMjY=}
+    jwt-validity-minutes: 15
+    qr-secret: ${VOYAGO_QR_SECRET:voyago-qr-signature-demo-secret}
+    webhook-secret: ${VOYAGO_WEBHOOK_SECRET:voyago-webhook-demo-secret}
+  mail:
+    # true : envoi réel via SMTP (ex. Mailpit sur localhost:1025). false : e-mails enregistrés dans la boîte de démo.
+    enabled: false
+    from: no-reply@voyago.cm
+  seed-demo-data: true

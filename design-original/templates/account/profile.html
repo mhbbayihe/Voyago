@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Mon profil')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main class="container">
+  <div class="auth-wrap">
+    <div th:replace="~{fragments/layout :: flash}"></div>
+    <div class="card">
+      <h1>Mon profil</h1>
+      <p class="muted"><span th:text="${user.email}">email</span> · <span class="badge mode" th:text="${user.role.label}">rôle</span></p>
+      <form method="post" th:action="@{/account/profile}">
+        <div class="field"><label for="fullName">Nom complet</label><input class="input" id="fullName" name="fullName" th:value="${user.fullName}" required></div>
+        <div class="field"><label for="phone">Téléphone</label><input class="input" type="tel" id="phone" name="phone" th:value="${user.phone}"></div>
+        <button class="btn btn-primary" type="submit">Enregistrer</button>
+      </form>
+    </div>
+  </div>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

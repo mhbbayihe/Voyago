@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Messages')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main class="container">
+  <div class="page-head">
+    <div>
+      <h1>Messages reçus</h1>
+      <p class="muted">E-mails et SMS envoyés par VoyaGo. En mode démonstration, ils sont conservés ici au lieu d'être réellement envoyés.</p>
+    </div>
+  </div>
+  <div class="card empty" th:if="${#lists.isEmpty(notifications)}"><div class="big"><svg th:replace="~{fragments/layout :: icon('inbox')}"></svg></div><p>Aucun message.</p></div>
+  <details class="mail" th:each="n, it : ${notifications}" th:open="${it.first}">
+    <summary>
+      <span class="badge" th:classappend="${n.channel.name() == 'EMAIL'} ? 'info' : 'muted'" th:text="${n.channel.label}">E-mail</span>
+      <strong th:text="${n.subject != null ? n.subject : #strings.abbreviate(n.body, 70)}">Sujet</strong>
+      <span class="spacer"></span>
+      <span class="small muted" th:text="${#temporals.format(n.createdAt, 'dd/MM/yyyy HH:mm')}">date</span>
+    </summary>
+    <div class="body">
+      <p class="small muted" th:text="${'À : ' + n.recipient}">à</p>
+      <div th:text="${n.body}">corps</div>
+      <p th:if="${n.attachmentName != null and n.bookingId != null}" style="margin-top:12px">
+        <svg th:replace="~{fragments/layout :: icon('paperclip')}"></svg> <a th:href="@{/bookings/{id}/tickets.pdf(id=${n.bookingId})}" target="_blank" th:text="${n.attachmentName}">pièce jointe</a>
+      </p>
+    </div>
+  </details>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

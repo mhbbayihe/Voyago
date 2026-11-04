@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Paiements')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main class="container">
+  <div class="bo">
+    <nav th:replace="~{fragments/layout :: adminNav('payments')}"></nav>
+    <section>
+      <div class="page-head"><div><h1>Transactions et remboursements</h1><p class="muted">Seules les références externes sont conservées, jamais les données de compte.</p></div></div>
+      <div class="card">
+        <h2>Paiements</h2>
+        <div class="table-wrap">
+          <table class="table stack-mobile">
+            <thead><tr><th>Date</th><th>Réservation</th><th>Moyen</th><th>Montant</th><th>Réf. externe</th><th>Statut</th></tr></thead>
+            <tbody>
+              <tr th:each="p : ${payments}">
+                <td data-label="Date" th:text="${#temporals.format(p.createdAt, 'dd/MM HH:mm')}">date</td>
+                <td data-label="Réservation" class="mono" th:text="${p.bookingReference}">ref</td>
+                <td data-label="Moyen" th:text="${p.method.label}">moyen</td>
+                <td data-label="Montant" th:text="${@fmt.money(p.amount)}">0</td>
+                <td data-label="Réf. externe" class="mono small" th:text="${p.externalReference != null ? p.externalReference : '-'}">ext</td>
+                <td data-label="Statut"><span class="badge" th:classappend="${p.status.tone}" th:text="${p.status.label}" th:title="${p.failureReason}">statut</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Remboursements</h2>
+        <div class="table-wrap">
+          <table class="table stack-mobile">
+            <thead><tr><th>Date</th><th>Réservation</th><th>Montant</th><th>Moyen</th><th>Motif</th></tr></thead>
+            <tbody>
+              <tr th:each="r : ${refunds}">
+                <td data-label="Date" th:text="${#temporals.format(r.createdAt, 'dd/MM HH:mm')}">date</td>
+                <td data-label="Réservation" class="mono" th:text="${r.bookingReference}">ref</td>
+                <td data-label="Montant" th:text="${@fmt.money(r.amount)}">0</td>
+                <td data-label="Moyen" th:text="${r.method.label}">moyen</td>
+                <td data-label="Motif" class="small" th:text="${r.reason}">motif</td>
+              </tr>
+              <tr th:if="${#lists.isEmpty(refunds)}"><td colspan="5" class="muted">Aucun remboursement.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

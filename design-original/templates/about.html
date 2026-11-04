@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Architecture du projet')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main class="container">
+  <div class="page-head"><div><h1>Architecture de VoyaGo</h1><p class="muted">Projet du Groupe 15 · Architecture logicielle et objets répartis · ENSP Douala</p></div></div>
+
+  <div class="grid-2">
+    <section class="card">
+      <h2>Monolithe modulaire</h2>
+      <p>L'application est découpée en <strong>6 modules indépendants</strong> (auth, trip, booking, payment, notification, backoffice),
+        chacun organisé en couches <em>api / web → application → domain ← infrastructure</em> (architecture hexagonale).</p>
+      <p>Les modules ne lisent jamais les tables des autres : ils communiquent par des <strong>services publics</strong>, des
+        <strong>ports</strong> (ex. <code>SeatOccupancyPort</code>) et des <strong>événements métier</strong>. Chaque module peut donc
+        devenir un microservice sans refonte (plan de repli prévu au cahier des charges, section 6.2).</p>
+    </section>
+    <section class="card">
+      <h2>Saga réservation ↔ paiement</h2>
+      <ol>
+        <li>Réservation créée « en attente », sièges verrouillés 15 min.</li>
+        <li>Paiement initié auprès de l'opérateur (Strategy / Adapter).</li>
+        <li>Webhook signé → événement <code>PaymentConfirmed</code>.</li>
+        <li>Booking confirme et émet les billets → <code>BookingConfirmed</code>.</li>
+        <li>Notification envoie l'e-mail avec le PDF (après validation de la transaction).</li>
+        <li>Compensations : expiration → paiements annulés ; annulation → remboursement ; paiement tardif → remboursement intégral.</li>
+      </ol>
+    </section>
+    <section class="card">
+      <h2>Aucune double vente (RG1)</h2>
+      <p>Chaque siège occupé est une ligne de la table <code>seat_reservation</code> avec une <strong>contrainte d'unicité
+        (voyage, siège)</strong> : si deux clients valident au même instant, la base refuse le second. Les verrous expirés sont
+        libérés par une tâche planifiée. S'y ajoutent le verrouillage optimiste (<code>@Version</code>) et l'idempotence des paiements.</p>
+    </section>
+    <section class="card">
+      <h2>Patrons de conception</h2>
+      <ul>
+        <li><strong>Repository</strong> : Spring Data JPA</li>
+        <li><strong>DTO</strong> : records de l'API REST</li>
+        <li><strong>Strategy / Adapter</strong> : <code>PaymentProvider</code> (MTN MoMo, Orange Money, espèces)</li>
+        <li><strong>Factory</strong> : <code>NotificationFactory</code> (e-mail, SMS)</li>
+        <li><strong>Observer</strong> : événements de domaine</li>
+        <li><strong>State</strong> : <code>BookingStatus</code> et ses transitions</li>
+        <li><strong>Saga</strong> : réservation ↔ paiement avec compensations</li>
+      </ul>
+    </section>
+  </div>
+  <p style="margin-top:20px"><a class="btn btn-outline" th:href="@{/swagger-ui.html}">Explorer l'API REST (Swagger UI)</a></p>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

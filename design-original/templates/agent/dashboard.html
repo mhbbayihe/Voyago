@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Espace agent')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main class="container">
+  <div class="bo">
+    <nav th:replace="~{fragments/layout :: agentNav('dashboard')}"></nav>
+    <section>
+      <div class="page-head">
+        <div><h1>Tableau de bord</h1><p class="muted"><svg th:replace="~{fragments/layout :: icon(${company.mode.icon})}"></svg> <th:block th:text="${company.name}">compagnie</th:block></p></div>
+        <a class="btn btn-primary" th:href="@{/agent/scan}"><svg th:replace="~{fragments/layout :: icon('scan-line')}"></svg> Contrôler un billet</a>
+      </div>
+
+      <div class="grid-4">
+        <div class="kpi"><div class="label">Revenus encaissés</div><div class="value" th:text="${@fmt.money(stats.revenue())}">0</div><div class="hint">après remboursements</div></div>
+        <div class="kpi"><div class="label">Billets vendus</div><div class="value" th:text="${stats.ticketsSold()}">0</div><div class="hint" th:text="${stats.confirmed() + ' réservations confirmées'}">hint</div></div>
+        <div class="kpi"><div class="label">Taux de remplissage</div><div class="value" th:text="${avgFill + ' %'}">0 %</div><div class="hint" th:text="${tripCount + ' voyages à venir'}">hint</div></div>
+        <div class="kpi"><div class="label">Annulations</div><div class="value" th:text="${stats.cancelled()}">0</div><div class="hint" th:text="${@fmt.money(stats.refunded()) + ' remboursés'}">hint</div></div>
+      </div>
+
+      <div class="grid-2 section" style="margin-top:20px">
+        <div class="card">
+          <h2>Revenus par ligne</h2>
+          <p class="muted" th:if="${#lists.isEmpty(stats.byRoute())}">Aucune vente pour le moment.</p>
+          <div class="hbar" th:each="r : ${stats.byRoute()}">
+            <div class="top"><span th:text="${r.label()}">ligne</span><strong th:text="${@fmt.money(r.revenue())}">0</strong></div>
+            <div class="track"><i th:style="${'width:' + (stats.byRoute()[0].revenue() == 0 ? 0 : r.revenue() * 100 / stats.byRoute()[0].revenue()) + '%'}"></i></div>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Ventes des 14 derniers jours</h2>
+          <div class="bars" role="img" aria-label="Histogramme des revenus journaliers">
+            <div class="bar" th:each="d : ${stats.last14Days()}" th:title="${#temporals.format(d.day(), 'dd/MM') + ' : ' + @fmt.money(d.revenue())}">
+              <i th:style="${'height:' + d.percentOfMax() + '%'}"></i>
+              <small th:text="${#temporals.format(d.day(), 'dd')}">01</small>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:20px">
+        <div class="card-title"><h2>Prochains départs</h2><a th:href="@{/agent/trips}">Tous les voyages →</a></div>
+        <div class="table-wrap">
+          <table class="table stack-mobile">
+            <thead><tr><th>Départ</th><th>Ligne</th><th>Véhicule</th><th>Remplissage</th><th></th></tr></thead>
+            <tbody>
+              <tr th:each="t : ${nextTrips}">
+                <td data-label="Départ" th:text="${#temporals.format(t.departureAt(), 'EEE dd/MM HH:mm')}">date</td>
+                <td data-label="Ligne" th:text="${t.label()}">ligne</td>
+                <td data-label="Véhicule" th:text="${t.vehicleRegistration() + ' · ' + t.serviceClassLabel()}">véhicule</td>
+                <td data-label="Remplissage">
+                  <div class="row"><div class="progress" th:classappend="${t.occupancyPercent() > 80} ? 'high'"><i th:style="${'width:' + t.occupancyPercent() + '%'}"></i></div>
+                  <span class="small" th:text="${(t.seatCount() - t.availableSeats()) + '/' + t.seatCount()}">0/40</span></div>
+                </td>
+                <td data-label="Actions" class="nowrap">
+                  <a class="btn btn-outline btn-sm" th:href="@{/agent/trips/{id}/manifest(id=${t.id()})}">Passagers</a>
+                  <a class="btn btn-primary btn-sm" th:href="@{/agent/counter/{id}(id=${t.id()})}">Vendre</a>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>

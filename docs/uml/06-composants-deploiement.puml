@@ -1,0 +1,110 @@
+' VoyaGo - Composants et déploiement · v1.0 · Groupe 15 · 2026-11-04
+
+@startuml composants
+title C1 - Diagramme de composants (monolithe modulaire, architecture hexagonale)
+skinparam componentStyle rectangle
+
+actor "Navigateur\n(mobile / PC)" as Browser
+actor "Client API\n(future appli mobile)" as Mobile
+actor "Opérateur Mobile Money" as Op
+
+package "Application Spring Boot VoyaGo" {
+  [Sécurité\n(session web + JWT /api)] as SEC
+  package "auth" {
+    [AuthService] as AUTH
+  }
+  package "trip" {
+    [TripService / CatalogService] as TRIP
+    interface "SeatOccupancyPort" as P1
+  }
+  package "booking" {
+    [BookingService / TicketService] as BOOK
+    [SeatOccupancyAdapter] as ADAPT
+    [BookingScheduler] as SCHED
+  }
+  package "payment" {
+    [PaymentService] as PAY
+    interface "PaymentProvider" as PPI
+    [MtnMomoProvider] as MTN
+    [OrangeMoneyProvider] as OM
+    [CashProvider] as CASH
+  }
+  package "notification" {
+    [NotificationService] as NOTIF
+    interface "NotificationSender" as NSI
+    [EmailSender] as MAIL
+    [SmsSender] as SMS
+  }
+  package "backoffice" {
+    [StatsService] as STATS
+  }
+  queue "Événements de domaine\n(Observer / Pub-Sub)" as BUS
+  [AuditService] as AUDIT
+}
+database "H2 (démo)\nPostgreSQL (prod)" as DB
+
+Browser --> SEC : HTTPS (pages Thymeleaf)
+Mobile --> SEC : REST /api/v1 (JSON, JWT)
+Op --> PAY : webhook signé HMAC
+SEC --> AUTH
+SEC --> TRIP
+SEC --> BOOK
+SEC --> PAY
+SEC --> STATS
+ADAPT ..|> P1
+TRIP ..> P1 : utilise
+BOOK --> TRIP : requireBookable()
+PAY --> BOOK : requirePayable()
+PAY --> PPI
+MTN ..|> PPI
+OM ..|> PPI
+CASH ..|> PPI
+PAY ..> BUS : PaymentConfirmed / Failed
+BOOK ..> BUS : BookingConfirmed / Cancelled / Expired
+BUS ..> BOOK
+BUS ..> PAY
+BUS ..> NOTIF
+NOTIF --> NSI
+MAIL ..|> NSI
+SMS ..|> NSI
+STATS --> BOOK
+SCHED --> BOOK
+AUTH --> AUDIT
+BOOK --> AUDIT
+PAY --> AUDIT
+AUTH --> DB
+TRIP --> DB
+BOOK --> DB
+PAY --> DB
+NOTIF --> DB
+@enduml
+
+@startuml deploiement
+title D1 - Diagramme de déploiement
+node "Poste client" {
+  artifact "Navigateur web\n(HTML/CSS/JS responsive)" as NAV
+}
+node "Serveur (VPS ou poste de démo)" {
+  node "JVM 17+" {
+    artifact "voyago-1.0.0.jar\n(Spring Boot, Tomcat embarqué :8080)" as JAR
+  }
+  database "H2 fichier ./data/voyago\n(ou PostgreSQL :5432, profil postgres)" as DB
+  node "Mailpit / SMTP :1025 (optionnel)" as SMTP
+}
+cloud "Opérateurs Mobile Money\n(sandbox MTN MoMo / Orange Money)" as OPS
+cloud "Passerelle SMS (optionnelle)" as SMSGW
+
+NAV --> JAR : HTTPS
+JAR --> DB : JDBC
+JAR --> SMTP : SMTP
+JAR --> OPS : HTTPS (API opérateur)
+OPS --> JAR : webhook HTTPS signé
+JAR --> SMSGW : HTTPS
+note right of JAR
+  Évolution prévue (cahier des charges §6.2) :
+  chaque module devient un microservice
+  derrière une API Gateway, avec RabbitMQ
+  à la place des événements internes
+  et Redis pour les verrous de sièges.
+end note
+@enduml

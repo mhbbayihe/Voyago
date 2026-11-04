@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Contrôle des billets')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main class="container">
+  <div class="bo">
+    <nav th:replace="~{fragments/layout :: agentNav('scan')}"></nav>
+    <section>
+      <div class="page-head"><div><h1>Contrôle des billets</h1><p class="muted">Scannez le QR code du passager ou saisissez le numéro du billet.</p></div></div>
+
+      <div class="scan-result" th:if="${result != null}" th:classappend="${result.valid()} ? 'ok' : 'ko'" role="alert" aria-live="assertive">
+        <div class="big"><svg th:replace="~{fragments/layout :: icon(${result.valid()} ? 'circle-check' : 'circle-x')}"></svg></div>
+        <h2 th:text="${result.valid()} ? 'Embarquement autorisé' : 'Billet refusé'">Résultat</h2>
+        <p th:text="${result.message()}">message</p>
+        <p th:if="${result.ticket() != null}" style="margin:0">
+          <strong th:text="${result.ticket().passengerName}">nom</strong> ·
+          <span th:text="${'Siège ' + result.ticket().seatNumber}">siège</span> ·
+          <span th:text="${result.ticket().tripLabel + ' ' + #temporals.format(result.ticket().departureAt, 'dd/MM HH:mm')}">trajet</span><br>
+          <span th:text="${'Pièce : ' + result.ticket().passengerIdNumber}">CNI</span>
+        </p>
+      </div>
+
+      <div class="grid-2" style="margin-top:20px">
+        <div class="card">
+          <h2>Caméra</h2>
+          <div id="reader" aria-label="Lecteur de QR code"></div>
+          <button class="btn btn-outline" type="button" id="start-scan" style="margin-top:12px"><svg th:replace="~{fragments/layout :: icon('camera')}"></svg> Activer la caméra</button>
+          <p class="small muted" style="margin-top:8px">La caméra nécessite HTTPS ou localhost. Sinon, utilisez la saisie manuelle.</p>
+        </div>
+        <form class="card" method="post" th:action="@{/agent/scan}" id="scan-form">
+          <h2>Saisie manuelle</h2>
+          <div class="field">
+            <label for="code">Numéro du billet ou contenu du QR code</label>
+            <input class="input mono" id="code" name="code" placeholder="TK-XXXXXXXX" required autofocus autocomplete="off">
+          </div>
+          <button class="btn btn-primary" type="submit">Vérifier le billet</button>
+        </form>
+      </div>
+    </section>
+  </div>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<script th:src="@{/js/html5-qrcode.min.js}"></script>
+<script>
+  (function () {
+    var btn = document.getElementById("start-scan");
+    btn.addEventListener("click", function () {
+      if (typeof Html5Qrcode === "undefined") { alert("Lecteur indisponible"); return; }
+      btn.disabled = true;
+      var scanner = new Html5Qrcode("reader");
+      scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 220 }, function (text) {
+        scanner.stop();
+        document.getElementById("code").value = text;
+        document.getElementById("scan-form").submit();
+      }).catch(function (err) {
+        btn.disabled = false;
+        alert("Caméra inaccessible : " + err);
+      });
+    });
+  })();
+</script>
+</body>
+</html>

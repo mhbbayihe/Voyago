@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Utilisateurs')}"></head>
+<body>
+<header th:replace="~{fragments/layout :: header}"></header>
+<main class="container">
+  <div class="bo">
+    <nav th:replace="~{fragments/layout :: adminNav('users')}"></nav>
+    <section>
+      <div th:replace="~{fragments/layout :: flash}"></div>
+      <div class="page-head"><div><h1>Utilisateurs</h1><p class="muted">Clients, agents de compagnie et administrateurs.</p></div></div>
+      <form class="card" method="post" th:action="@{/admin/users}">
+        <h2>Créer un compte agent ou administrateur</h2>
+        <div class="form-grid cols-3">
+          <div><label for="fullName">Nom complet</label><input class="input" id="fullName" name="fullName" required></div>
+          <div><label for="email">E-mail</label><input class="input" type="email" id="email" name="email" required></div>
+          <div><label for="phone">Téléphone</label><input class="input" id="phone" name="phone"></div>
+          <div><label for="password">Mot de passe initial</label><input class="input" type="password" id="password" name="password" minlength="8" required autocomplete="new-password"></div>
+          <div><label for="role">Rôle</label><select class="input" id="role" name="role"><option value="AGENT">Agent de compagnie</option><option value="ADMIN">Administrateur</option></select></div>
+          <div><label for="companyId">Compagnie (agent)</label><select class="input" id="companyId" name="companyId"><option value="">-</option><option th:each="c : ${companies}" th:value="${c.id}" th:text="${c.name}"></option></select></div>
+        </div>
+        <button class="btn btn-primary" type="submit" style="margin-top:12px">Créer le compte</button>
+      </form>
+      <div class="card">
+        <div class="table-wrap">
+          <table class="table stack-mobile">
+            <thead><tr><th>Nom</th><th>E-mail</th><th>Rôle</th><th>Inscrit le</th><th>Statut</th><th></th></tr></thead>
+            <tbody>
+              <tr th:each="u : ${users}">
+                <td data-label="Nom" th:text="${u.fullName}">nom</td>
+                <td data-label="E-mail" th:text="${u.email}">email</td>
+                <td data-label="Rôle"><span class="badge mode" th:text="${u.role.label}">rôle</span></td>
+                <td data-label="Inscrit le" th:text="${#temporals.format(u.createdAt, 'dd/MM/yyyy')}">date</td>
+                <td data-label="Statut"><span class="badge" th:classappend="${u.active} ? 'success' : 'danger'" th:text="${u.active} ? 'Actif' : 'Désactivé'">statut</span></td>
+                <td data-label="Action">
+                  <form method="post" th:action="@{/admin/users/{id}/toggle(id=${u.id})}" th:unless="${me != null and me.id == u.id}">
+                    <input type="hidden" name="active" th:value="${!u.active}">
+                    <button class="btn btn-sm" th:classappend="${u.active} ? 'btn-danger' : 'btn-outline'" type="submit" th:text="${u.active} ? 'Désactiver' : 'Réactiver'">action</button>
+                  </form>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+</body>
+</html>
